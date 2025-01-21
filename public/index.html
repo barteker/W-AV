@@ -2,16 +2,33 @@
 <html>
 <head>
     <title>W/AV Player</title>
+    <style>
+        .controls {
+            margin: 20px;
+            padding: 10px;
+        }
+        button {
+            margin: 5px;
+            padding: 10px;
+        }
+    </style>
 </head>
 <body>
     <div id="status">Initializing...</div>
+    <div class="controls">
+        <button id="prevBtn">Previous</button>
+        <button id="playPauseBtn">Play/Pause</button>
+        <button id="nextBtn">Next</button>
+    </div>
+    <div id="nowPlaying"></div>
+
     <script src="https://sdk.scdn.co/spotify-player.js"></script>
     <script>
         const params = new URLSearchParams(window.location.search);
         const token = params.get('token');
 
         if (!token) {
-            window.location.href = '/login';
+            window.location.href = '/auto-login';
         }
 
         window.onSpotifyWebPlaybackSDKReady = () => {
@@ -22,6 +39,7 @@
 
             player.addListener('ready', ({ device_id }) => {
                 console.log('Device ready:', device_id);
+                document.getElementById('status').textContent = 'Device Ready';
                 fetch('/register-device', {
                     method: 'POST',
                     headers: {
@@ -46,10 +64,25 @@
 
             player.addListener('player_state_changed', state => {
                 if (state) {
-                    document.getElementById('status').textContent = 
-                        `Playing: ${state.track_window.current_track.name}`;
+                    document.getElementById('nowPlaying').textContent = 
+                        `Now Playing: ${state.track_window.current_track.name}`;
+                    document.getElementById('playPauseBtn').textContent = 
+                        state.paused ? 'Play' : 'Pause';
                 }
             });
+
+            // Control buttons
+            document.getElementById('playPauseBtn').onclick = () => {
+                player.togglePlay();
+            };
+
+            document.getElementById('prevBtn').onclick = () => {
+                player.previousTrack();
+            };
+
+            document.getElementById('nextBtn').onclick = () => {
+                player.nextTrack();
+            };
 
             player.connect().then(success => {
                 if (!success) {
