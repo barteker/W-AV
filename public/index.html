@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>W/AV Player</title>
+</head>
+<body>
+    <div id="status">Initializing...</div>
+    <script src="https://sdk.scdn.co/spotify-player.js"></script>
+    <script>
+        // Get token from URL parameters
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get('token');
+
+        if (!token) {
+            window.location.href = '/login';
+        }
+
+        window.onSpotifyWebPlaybackSDKReady = () => {
+            const player = new Spotify.Player({
+                name: 'W/AV Device',
+                getOAuthToken: cb => { cb(token); }
+            });
+
+            // Error handling
+            player.addListener('initialization_error', ({ message }) => {
+                document.getElementById('status').textContent = 'Init Error: ' + message;
+            });
+
+            player.addListener('authentication_error', ({ message }) => {
+                document.getElementById('status').textContent = 'Auth Error: ' + message;
+                window.location.href = '/login';
+            });
+
+            player.addListener('ready', ({ device_id }) => {
+                document.getElementById('status').textContent = 'Ready - Device ID: ' + device_id;
+                fetch('/register-device', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ device_id })
+                }).catch(error => {
+                    document.getElementById('status').textContent = 'Registration Error: ' + error;
+                });
+            });
+
+            player.addListener('player_state_changed', state => {
+                if (state) {
+                    document.getElementById('status').textContent = 
+                        `Playing: ${state.track_window.current_track.name}`;
+                }
+            });
+
+            // Connect and handle errors
+            player.connect().then(success => {
+                if (!success) {
+                    document.getElementById('status').textContent = 'Failed to connect';
+                }
+            });
+
+            // Refresh token every 30 minutes
+            setInterval(() => {
+                fetch('/refresh-token')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.token) {
+                            window.location.reload();
+                        }
+                    })
+                    .catch(error => {
+                        document.getElementById('status').textContent = 'Token refresh failed';
+                    });
+            }, 30 * 60 * 1000);
+        };
+    </script>
+</body>
+</html>

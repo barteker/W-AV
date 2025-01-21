@@ -4,7 +4,9 @@
     "description": "Software for w/av",
     "main": "spotify.js",
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "start": "node server.js",
+        "dev": "nodemon server.js"
     },
     "repository": {
         "type": "git",
@@ -18,13 +20,14 @@
     },
     "homepage": "https://github.com/barteker/W-AV#readme",
     "dependencies": {
-        "express": "^4.17.1",
-        "spotify-web-api-node": "^5.0.0",
-        "dotenv": "^8.2.0",
-        "onoff": "6.0.3",
-        "i2c-bus": "5.2.3",
-        "rotary-encoder": "0.0.1",
-        "spi-device": "3.1.2"
+        "express": "^4.18.2",
+        "spotify-web-api-node": "^5.0.2",
+        "dotenv": "^16.3.1"
     },
-    "devDependencies": {}
+    "devDependencies": {
+        "nodemon": "^3.0.2"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    }
 }
