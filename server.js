@@ -146,5 +146,4 @@ app.use((error, req, res, next) => {
 const PORT = process.env.PORT || 8888;
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
-    console.log('Visit http://localhost:8888/login to start');
 });
