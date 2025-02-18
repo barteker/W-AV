@@ -1,5 +1,3 @@
-const { ipcRenderer } = require('electron');
-
 document.getElementById('playPauseBtn').onclick = () => {
     fetch('/play', { method: 'POST' });
 };

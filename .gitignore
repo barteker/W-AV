@@ -1,4 +1,4 @@
 .env
 _defunct
 .credentials
-node_modules/
+node_modules

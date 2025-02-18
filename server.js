@@ -4,6 +4,7 @@ const SpotifyWebApi = require('spotify-web-api-node');
 const path = require('path');
 const fs = require('fs');
 
+
 const app = express();
 app.use(express.json());
 app.use(express.static('public'));
@@ -134,6 +135,41 @@ app.get('/refresh_token', async (req, res) => {
         res.json({ access_token: data.body.access_token });
     } catch (err) {
         res.status(500).json({ error: err.message });
+    }
+});
+
+// Add this route handler near the top of your routes
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Add this route for the player state
+app.get('/player-state', async (req, res) => {
+    try {
+        const state = await spotifyApi.getMyCurrentPlaybackState();
+        res.json(state.body);
+    } catch (error) {
+        console.error('Error getting playback state:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Add these missing routes for previous/next
+app.post('/previous', async (req, res) => {
+    try {
+        await spotifyApi.skipToPrevious();
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/next', async (req, res) => {
+    try {
+        await spotifyApi.skipToNext();
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 });
 
