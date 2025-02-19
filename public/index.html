@@ -11,55 +11,162 @@
             margin: 5px;
             padding: 10px;
         }
+        #status {
+            padding: 10px;
+            margin: 10px;
+            color: #666;
+        }
+        .error {
+            color: #e74c3c;
+        }
+        .library {
+            margin: 20px;
+            padding: 10px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .tabs {
+            margin-bottom: 15px;
+        }
+        .tab-btn {
+            background: #282828;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+        }
+        .tab-btn.active {
+            background: #1db954;
+        }
+        .library-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #282828;
+        }
+        .library-item:hover {
+            background: #282828;
+        }
+        .library-item img {
+            width: 50px;
+            height: 50px;
+            margin-right: 15px;
+        }
     </style>
 </head>
 <body>
-    <div id="status">Initializing...</div>
+    <div id="status">Checking token...</div>
     <div class="controls">
-        <button id="prevBtn">Previous</button>
-        <button id="playPauseBtn">Play/Pause</button>
-        <button id="nextBtn">Next</button>
+        <button id="prevBtn" disabled>Previous</button>
+        <button id="playPauseBtn" disabled>Play/Pause</button>
+        <button id="nextBtn" disabled>Next</button>
+        <button id="logoutBtn">Logout</button>
+    </div>
+    <div class="library">
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="playlists">Playlists</button>
+            <button class="tab-btn" data-tab="albums">Albums</button>
+            <button class="tab-btn" data-tab="songs">Liked Songs</button>
+        </div>
+        <div id="library-content"></div>
     </div>
     <div id="nowPlaying"></div>
 
     <script src="https://sdk.scdn.co/spotify-player.js"></script>
     <script>
+        const statusEl = document.getElementById('status');
         const params = new URLSearchParams(window.location.search);
         const token = params.get('token');
 
         if (!token) {
+            statusEl.textContent = 'No token found, redirecting...';
             window.location.href = '/auto-login';
+        } else {
+            statusEl.textContent = 'Token found, initializing player...';
         }
 
         window.onSpotifyWebPlaybackSDKReady = () => {
+            statusEl.textContent = 'SDK Ready, creating player...';
+
             const player = new Spotify.Player({
                 name: 'W/AV Device',
-                getOAuthToken: cb => { cb(token); }
+                getOAuthToken: cb => { cb(token); },
+                volume: 0.5
             });
 
-            player.addListener('ready', ({ device_id }) => {
-                console.log('Device ready:', device_id);
-                document.getElementById('status').textContent = 'Device Ready';
-                fetch('/register-device', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ device_id })
-                });
-            });
-
+            // Add not ready listener
             player.addListener('not_ready', ({ device_id }) => {
-                console.log('Device lost connection:', device_id);
+                console.log('Device ID has gone offline', device_id);
+                statusEl.textContent = 'Device went offline, trying to reconnect...';
+            });
+
+            // Update ready listener
+            player.addListener('ready', ({ device_id }) => {
+                statusEl.textContent = 'Player ready, checking premium status...';
+                
+                // Check premium status first
+                fetch('/check-premium', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.isPremium) {
+                        return fetch('/register-device', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ device_id })
+                        });
+                    } else {
+                        throw new Error('Premium account required');
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        statusEl.textContent = 'Device registered successfully';
+                        document.getElementById('prevBtn').disabled = false;
+                        document.getElementById('playPauseBtn').disabled = false;
+                        document.getElementById('nextBtn').disabled = false;
+                    }
+                })
+                .catch(error => {
+                    statusEl.textContent = 'Error: ' + error.message;
+                    statusEl.classList.add('error');
+                });
+
+                loadLibraryContent('playlists');
             });
 
             player.addListener('initialization_error', ({ message }) => {
-                document.getElementById('status').textContent = 'Init Error: ' + message;
+                statusEl.textContent = 'Initialization Error: ' + message;
+                statusEl.classList.add('error');
             });
 
             player.addListener('authentication_error', ({ message }) => {
-                document.getElementById('status').textContent = 'Auth Error: ' + message;
-                window.location.href = '/login';
+                statusEl.textContent = 'Authentication Error: ' + message;
+                statusEl.classList.add('error');
+                setTimeout(() => window.location.href = '/login', 2000);
+            });
+
+            player.addListener('account_error', ({ message }) => {
+                statusEl.textContent = 'Account Error: ' + message;
+                statusEl.classList.add('error');
+            });
+
+            // Connect to the player
+            statusEl.textContent = 'Connecting to Spotify...';
+            player.connect().then(success => {
+                if (success) {
+                    statusEl.textContent = 'Connected to Spotify';
+                } else {
+                    statusEl.textContent = 'Failed to connect to Spotify';
+                    statusEl.classList.add('error');
+                }
+            }).catch(error => {
+                statusEl.textContent = 'Connection Error: ' + error.message;
+                statusEl.classList.add('error');
             });
 
             player.addListener('player_state_changed', state => {
@@ -84,12 +191,6 @@
                 player.nextTrack();
             };
 
-            player.connect().then(success => {
-                if (!success) {
-                    document.getElementById('status').textContent = 'Failed to connect';
-                }
-            });
-
             setInterval(() => {
                 fetch('/refresh-token')
                     .then(response => response.json())
@@ -99,10 +200,108 @@
                         }
                     })
                     .catch(error => {
-                        document.getElementById('status').textContent = 'Token refresh failed';
+                        statusEl.textContent = 'Token refresh failed';
                     });
             }, 30 * 60 * 1000);
         };
+
+        // Add logout button handler
+        document.getElementById('logoutBtn').onclick = () => {
+            fetch('/logout', { 
+                method: 'POST',
+                credentials: 'same-origin'
+            })
+            .then(() => {
+                // Clear any client-side data
+                localStorage.clear();
+                sessionStorage.clear();
+                // Force reload from server
+                window.location.href = '/login';
+            })
+            .catch(error => {
+                console.error('Logout failed:', error);
+                // Fallback to direct login redirect
+                window.location.href = '/login';
+            });
+        };
+
+        function loadLibraryContent(tab) {
+            const contentDiv = document.getElementById('library-content');
+            contentDiv.innerHTML = 'Loading...';
+
+            fetch(`/${tab}`)
+                .then(response => response.json())
+                .then(items => {
+                    contentDiv.innerHTML = items.map(item => {
+                        // Handle different data structures for albums vs tracks/playlists
+                        if (tab === 'albums') {
+                            const album = item.album; // Albums come wrapped in an album property
+                            return `
+                                <div class="library-item" data-uri="${album.uri}">
+                                    <img src="${album.images[0]?.url}" alt="Cover">
+                                    <div>
+                                        <div>${album.name}</div>
+                                        <div style="color: #666">
+                                            ${album.artists[0]?.name}
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        } else {
+                            // Original handling for playlists and tracks
+                            return `
+                                <div class="library-item" data-uri="${item.uri || item.track?.uri}">
+                                    <img src="${item.images?.[0]?.url || item.track?.album?.images?.[0]?.url}" 
+                                         alt="Cover">
+                                    <div>
+                                        <div>${item.name || item.track?.name}</div>
+                                        <div style="color: #666">
+                                            ${item.owner?.display_name || item.artists?.[0]?.name || 
+                                              item.track?.artists?.[0]?.name}
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    }).join('');
+
+                    // Add click handlers
+                    document.querySelectorAll('.library-item').forEach(item => {
+                        item.onclick = () => {
+                            const uri = item.dataset.uri;
+                            console.log('Playing URI:', uri); // Debug log
+                            
+                            fetch('/play-context', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ 
+                                    uri: uri,
+                                    // Add offset if it's a track in a playlist/album
+                                    offset: uri.startsWith('spotify:track:') ? 0 : undefined
+                                })
+                            })
+                            .catch(error => {
+                                console.error('Play error:', error);
+                                document.getElementById('status').textContent = `Play error: ${error.message}`;
+                                document.getElementById('status').classList.add('error');
+                            });
+                        };
+                    });
+                })
+                .catch(error => {
+                    contentDiv.innerHTML = `Error loading ${tab}: ${error.message}`;
+                });
+        }
+
+        // Add tab switching logic
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const tab = btn.dataset.tab;
+                loadLibraryContent(tab === 'songs' ? 'liked-songs' : tab);
+            };
+        });
     </script>
 </body>
 </html>
