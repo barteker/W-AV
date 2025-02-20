@@ -3,6 +3,15 @@
 <head>
     <title>W/AV Player</title>
     <style>
+        body {
+            background-color: #050505;
+            color: aliceblue;
+            @font-face {
+                font-family: ClashGrotesk;
+                src: url("ClashGrotesk-Variable.ttf");
+            }
+            font-family: 'ClashGrotesk', sans-serif;
+        }
         .controls {
             margin: 20px;
             padding: 10px;
@@ -14,7 +23,7 @@
         #status {
             padding: 10px;
             margin: 10px;
-            color: #666;
+            color: #c4c4c4;
         }
         .error {
             color: #e74c3c;
@@ -29,7 +38,7 @@
             margin-bottom: 15px;
         }
         .tab-btn {
-            background: #282828;
+            background: #525252;
             color: white;
             border: none;
             padding: 10px 20px;
@@ -203,6 +212,78 @@
                         statusEl.textContent = 'Token refresh failed';
                     });
             }, 30 * 60 * 1000);
+
+            // Add this inside your window.onSpotifyWebPlaybackSDKReady callback
+            let audioContext;
+            let sourceNode;
+            let equalizer = [];
+            const frequencies = [60, 170, 350, 1000, 3500, 10000, 15000];
+
+            // Initialize Web Audio API
+            function initAudioContext() {
+                try {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    
+                    // Create filters for each frequency band
+                    frequencies.forEach((freq, index) => {
+                        const filter = audioContext.createBiquadFilter();
+                        filter.type = 'peaking';
+                        filter.frequency.value = freq;
+                        filter.Q.value = 1;
+                        filter.gain.value = 0;
+                        equalizer.push(filter);
+                        
+                        // Connect filters in series
+                        if (index === 0) {
+                            sourceNode = filter;
+                        } else {
+                            equalizer[index - 1].connect(filter);
+                        }
+                        
+                        // Add event listeners to sliders
+                        const slider = document.getElementById(`eq-${freq}`);
+                        slider.value = "0"; // Ensure slider starts at middle position
+                        slider.addEventListener('input', (e) => {
+                            const value = parseFloat(e.target.value);
+                            filter.gain.value = value;
+                            console.log(`Setting ${freq}Hz to ${value}dB`); // Debug log
+                        });
+                    });
+                    
+                    // Connect the last filter to the destination
+                    equalizer[equalizer.length - 1].connect(audioContext.destination);
+                    
+                    console.log('Audio context initialized successfully');
+                } catch (error) {
+                    console.error('Failed to initialize audio context:', error);
+                }
+            }
+
+            // Initialize audio processing when player is ready
+            player.addListener('ready', ({ device_id }) => {
+                initAudioContext();
+                // ... rest of your existing ready listener code ...
+            });
+
+            // Update audio processing when playback state changes
+            player.addListener('player_state_changed', state => {
+                if (state && state.track_window.current_track) {
+                    // Get the audio element (this requires some browser-specific handling)
+                    const audioElement = document.querySelector('audio');
+                    if (audioElement) {
+                        const source = audioContext.createMediaElementSource(audioElement);
+                        source.connect(sourceNode);
+                    }
+                }
+            });
+
+            // Add this to your JavaScript
+            document.getElementById('reset-eq').onclick = () => {
+                equalizer.forEach((filter, index) => {
+                    filter.gain.value = 0;
+                    document.getElementById(`eq-${frequencies[index]}`).value = 0;
+                });
+            };
         };
 
         // Add logout button handler
