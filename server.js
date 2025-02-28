@@ -3,9 +3,13 @@ const express = require('express');
 const SpotifyWebApi = require('spotify-web-api-node');
 const path = require('path');
 const fs = require('fs');
-
-
 const app = express();
+const server = require('http').createServer(app);
+const io = require('socket.io')(server);
+
+// Add this line to define the port
+const PORT = process.env.PORT || 8888;
+
 app.use(express.json());
 app.use(express.static('public'));
 
@@ -196,7 +200,46 @@ app.post('/play', async (req, res) => {
         if (!isActive || !deviceId) {
             throw new Error('Device not ready');
         }
-        await spotifyApi.play({
+        const state = await spotifyApi.getMyCurrentPlaybackState();
+        if (state.body && state.body.is_playing) {
+            await spotifyApi.pause({
+                device_id: deviceId
+            });
+        } else {
+            await spotifyApi.play({
+                device_id: deviceId
+            });
+        }
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/stop', async (req, res) => {
+    try {
+        if (!isActive || !deviceId) {
+            throw new Error('Device not ready');
+        }
+        await spotifyApi.pause({
+            device_id: deviceId
+        });
+        // Seek to beginning of track
+        await spotifyApi.seek(0, {
+            device_id: deviceId
+        });
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/pause', async (req, res) => {
+    try {
+        if (!isActive || !deviceId) {
+            throw new Error('Device not ready');
+        }
+        await spotifyApi.pause({
             device_id: deviceId
         });
         res.json({ success: true });
@@ -301,13 +344,72 @@ app.post('/play-context', async (req, res) => {
     }
 });
 
+// Add these new routes for pagination and display updates
+app.get('/:type', async (req, res) => {
+    const { type } = req.params;
+    const offset = parseInt(req.query.offset) || 0;
+    const limit = parseInt(req.query.limit) || 20;
+
+    try {
+        let data;
+        switch(type) {
+            case 'playlists':
+                data = await spotifyApi.getUserPlaylists({ limit, offset });
+                break;
+            case 'albums':
+                data = await spotifyApi.getMySavedAlbums({ limit, offset });
+                break;
+            case 'liked-songs':
+                data = await spotifyApi.getMySavedTracks({ limit, offset });
+                break;
+            default:
+                throw new Error('Invalid type');
+        }
+        res.json(data.body.items);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/update-display', (req, res) => {
+    // This will be used by the WebSocket connection
+    const { current_tab, current_item, items } = req.body;
+    // Broadcast to connected clients
+    io.emit('display-update', { current_tab, current_item, items });
+    res.json({ success: true });
+});
+
+// Add this near your other routes
+app.post('/ui-update', (req, res) => {
+    try {
+        const { tab, item, selectTab } = req.body;
+        
+        // Emit the update to all connected clients
+        io.emit('ui-update', { 
+            tab, 
+            item,
+            selectTab
+        });
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('UI update error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Add error handler
 app.use((error, req, res, next) => {
     console.error('Error:', error);
     res.status(500).json({ error: error.message });
 });
 
-const PORT = process.env.PORT || 8888;
-app.listen(PORT, () => {
+let currentTab = 'playlists';
+let currentItem = 0;
+
+
+
+// Update your existing server.listen to use the http server
+server.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });

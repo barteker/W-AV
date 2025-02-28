@@ -46,6 +46,9 @@
         .tab-btn.active {
             background: #1db954;
         }
+        .tab-btn.highlighted {
+            background: #383838;
+        }
         .library-item {
             display: flex;
             align-items: center;
@@ -61,7 +64,57 @@
             height: 50px;
             margin-right: 15px;
         }
+        .library-item.selected {
+            background: #1db954;
+        }
+        .pagination-controls {
+            text-align: center;
+            margin: 10px 0;
+        }
+        .page-btn {
+            background: #282828;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            cursor: pointer;
+        }
+        .page-btn:hover {
+            background: #383838;
+        }
+        .library-item.highlighted {
+            background-color: #383838;
+        }
+        .back-button {
+            background-color: #181818;
+            text-align: center;
+            font-weight: bold;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .back-button:hover {
+            background-color: #282828;
+        }
+        .back-button.highlighted {
+            background-color: #383838;
+        }
+        .artist {
+            color: #b3b3b3;
+            font-size: 0.9em;
+        }
+        :focus {
+            outline: 2px solid #1db954;
+            outline-offset: -2px;
+        }
+        .library-item:focus {
+            background-color: #383838;
+        }
+        .tab-btn:focus {
+            background-color: #383838;
+        }
     </style>
+    <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
     <div id="status">Checking token...</div>
@@ -78,6 +131,10 @@
             <button class="tab-btn" data-tab="songs">Liked Songs</button>
         </div>
         <div id="library-content"></div>
+        <div class="pagination-controls">
+            <button id="prevPage" class="page-btn" style="display: none;">↑ Previous Page</button>
+            <button id="nextPage" class="page-btn">↓ Next Page</button>
+        </div>
     </div>
     <div id="nowPlaying"></div>
 
@@ -93,6 +150,9 @@
         } else {
             statusEl.textContent = 'Token found, initializing player...';
         }
+
+        // Move socket initialization outside of onSpotifyWebPlaybackSDKReady
+        const socket = io();
 
         window.onSpotifyWebPlaybackSDKReady = () => {
             statusEl.textContent = 'SDK Ready, creating player...';
@@ -284,6 +344,76 @@
                     document.getElementById(`eq-${frequencies[index]}`).value = 0;
                 });
             };
+
+            // Add pagination handlers
+            let currentPage = 0;
+            const itemsPerPage = 20;
+
+            document.getElementById('nextPage').onclick = () => {
+                currentPage++;
+                loadLibraryContent(currentTab, currentPage * itemsPerPage);
+            };
+
+            document.getElementById('prevPage').onclick = () => {
+                if (currentPage > 0) {
+                    currentPage--;
+                    loadLibraryContent(currentTab, currentPage * itemsPerPage);
+                }
+            };
+
+            // Update loadLibraryContent function to handle pagination
+            function loadLibraryContent(tab, offset = 0) {
+                const contentDiv = document.getElementById('library-content');
+                contentDiv.innerHTML = 'Loading...';
+
+                fetch(`/${tab}?offset=${offset}&limit=${itemsPerPage}`)
+                    .then(response => response.json())
+                    .then(items => {
+                        // Update display
+                        updateLibraryDisplay(items, offset);
+                    })
+                    .catch(error => {
+                        contentDiv.innerHTML = `Error loading ${tab}: ${error.message}`;
+                    });
+            }
+
+            // Handle WebSocket updates
+            socket.on('display-update', (data) => {
+                updateLibraryDisplay(data.items);
+                // Highlight selected item
+                document.querySelectorAll('.library-item').forEach((item, index) => {
+                    item.classList.toggle('selected', index === data.current_item);
+                });
+            });
+
+            // Update the socket.io handler in your JavaScript
+            socket.on('interface-update', (data) => {
+                if (data.select_tab) {
+                    // Actually switch tabs and load content
+                    const tabButtons = document.querySelectorAll('.tab-btn');
+                    tabButtons[data.tab].click();
+                } else {
+                    // Just highlight the selection
+                    if (data.item <= 2) {
+                        // Highlight tab
+                        document.querySelectorAll('.tab-btn').forEach((btn, index) => {
+                            btn.classList.toggle('highlighted', index === data.tab);
+                        });
+                    } else {
+                        // Highlight library item
+                        const items = document.querySelectorAll('.library-item');
+                        items.forEach((item, index) => {
+                            item.classList.toggle('selected', index === (data.item - 3));
+                        });
+                        
+                        // Scroll into view if needed
+                        const selectedItem = items[data.item - 3];
+                        if (selectedItem) {
+                            selectedItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }
+                    }
+                }
+            });
         };
 
         // Add logout button handler
@@ -306,82 +436,168 @@
             });
         };
 
-        function loadLibraryContent(tab) {
+        // Make sure these are at the global level for access by all functions
+        let currentTab = 'playlists';
+        let currentPage = 0;
+        const itemsPerPage = 20;
+
+        // Add tab switching logic
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('.tab-btn').forEach(b => {
+                    b.classList.remove('active');
+                    b.classList.remove('highlighted');
+                });
+                btn.classList.add('active');
+                currentTab = btn.dataset.tab;
+                currentPage = 0; // Reset page when changing tabs
+                loadLibraryContent(currentTab === 'songs' ? 'liked-songs' : currentTab);
+            };
+        });
+
+        // Update loadLibraryContent function to handle pagination
+        function loadLibraryContent(tab, offset = 0) {
             const contentDiv = document.getElementById('library-content');
             contentDiv.innerHTML = 'Loading...';
 
-            fetch(`/${tab}`)
+            fetch(`/${tab}?offset=${offset}&limit=${itemsPerPage}`)
                 .then(response => response.json())
                 .then(items => {
-                    contentDiv.innerHTML = items.map(item => {
-                        // Handle different data structures for albums vs tracks/playlists
-                        if (tab === 'albums') {
-                            const album = item.album; // Albums come wrapped in an album property
-                            return `
-                                <div class="library-item" data-uri="${album.uri}">
-                                    <img src="${album.images[0]?.url}" alt="Cover">
-                                    <div>
-                                        <div>${album.name}</div>
-                                        <div style="color: #666">
-                                            ${album.artists[0]?.name}
-                                        </div>
-                                    </div>
-                                </div>
-                            `;
-                        } else {
-                            // Original handling for playlists and tracks
-                            return `
-                                <div class="library-item" data-uri="${item.uri || item.track?.uri}">
-                                    <img src="${item.images?.[0]?.url || item.track?.album?.images?.[0]?.url}" 
-                                         alt="Cover">
-                                    <div>
-                                        <div>${item.name || item.track?.name}</div>
-                                        <div style="color: #666">
-                                            ${item.owner?.display_name || item.artists?.[0]?.name || 
-                                              item.track?.artists?.[0]?.name}
-                                        </div>
-                                    </div>
-                                </div>
-                            `;
-                        }
-                    }).join('');
-
-                    // Add click handlers
-                    document.querySelectorAll('.library-item').forEach(item => {
-                        item.onclick = () => {
-                            const uri = item.dataset.uri;
-                            console.log('Playing URI:', uri); // Debug log
-                            
-                            fetch('/play-context', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ 
-                                    uri: uri,
-                                    // Add offset if it's a track in a playlist/album
-                                    offset: uri.startsWith('spotify:track:') ? 0 : undefined
-                                })
-                            })
-                            .catch(error => {
-                                console.error('Play error:', error);
-                                document.getElementById('status').textContent = `Play error: ${error.message}`;
-                                document.getElementById('status').classList.add('error');
-                            });
-                        };
-                    });
+                    renderLibraryItems(items, tab);
+                    
+                    // Show/hide pagination buttons
+                    document.getElementById('prevPage').style.display = 
+                        offset > 0 ? 'inline-block' : 'none';
                 })
                 .catch(error => {
                     contentDiv.innerHTML = `Error loading ${tab}: ${error.message}`;
                 });
         }
 
-        // Add tab switching logic
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.onclick = () => {
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                const tab = btn.dataset.tab;
-                loadLibraryContent(tab === 'songs' ? 'liked-songs' : tab);
-            };
+        function renderLibraryItems(items, tab) {
+            const contentDiv = document.getElementById('library-content');
+            
+            // Add back button at the top
+            let html = `
+                <div class="back-button library-item" data-action="back">
+                    <div>↑ Back to Tabs</div>
+                </div>
+            `;
+            
+            // Add library items
+            html += items.map((item, index) => {
+                if (tab === 'albums') {
+                    const album = item.album;
+                    return `
+                        <div class="library-item" data-uri="${album.uri}" data-index="${index}">
+                            <img src="${album.images[0]?.url || 'default-cover.png'}" alt="Cover">
+                            <div>
+                                <div>${album.name}</div>
+                                <div class="artist">${album.artists[0]?.name || 'Unknown Artist'}</div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    return `
+                        <div class="library-item" data-uri="${item.uri || item.track?.uri}" data-index="${index}">
+                            <img src="${item.images?.[0]?.url || item.track?.album?.images?.[0]?.url || 'default-cover.png'}" 
+                                 alt="Cover">
+                            <div>
+                                <div>${item.name || item.track?.name}</div>
+                                <div class="artist">
+                                    ${item.owner?.display_name || item.artists?.[0]?.name || 
+                                      item.track?.artists?.[0]?.name || 'Unknown'}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }).join('');
+            
+            contentDiv.innerHTML = html;
+
+            // Add click handler for back button
+            const backButton = document.querySelector('.back-button');
+            if (backButton) {
+                backButton.onclick = () => {
+                    // Send back command via socket
+                    fetch('/ui-update', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            returnToTabs: true
+                        })
+                    });
+                };
+            }
+
+            // Add click handlers for items
+            document.querySelectorAll('.library-item:not(.back-button)').forEach((item, index) => {
+                item.onclick = () => {
+                    const uri = item.dataset.uri;
+                    if (!uri) return;
+                    
+                    document.querySelectorAll('.library-item').forEach(i => {
+                        i.classList.remove('selected');
+                        i.classList.remove('highlighted');
+                    });
+                    
+                    item.classList.add('selected');
+                    
+                    fetch('/play-context', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ uri })
+                    }).catch(error => {
+                        console.error('Play error:', error);
+                    });
+                };
+            });
+        }
+
+        // Pagination handlers
+        document.getElementById('nextPage').onclick = () => {
+            currentPage++;
+            loadLibraryContent(
+                currentTab === 'songs' ? 'liked-songs' : currentTab,
+                currentPage * itemsPerPage
+            );
+        };
+
+        document.getElementById('prevPage').onclick = () => {
+            if (currentPage > 0) {
+                currentPage--;
+                loadLibraryContent(
+                    currentTab === 'songs' ? 'liked-songs' : currentTab,
+                    currentPage * itemsPerPage
+                );
+            }
+        };
+
+
+        // Add to your index.html socket.io handler
+        socket.on('ui-update', function(data) {
+            if (data.focus_change) {
+                // Get all focusable elements
+                const focusable = Array.from(document.querySelectorAll(
+                    'button, [href], input, select, textarea, .library-item, .tab-btn'
+                )).filter(el => !el.disabled && el.offsetParent !== null);
+                
+                const currentIndex = focusable.indexOf(document.activeElement);
+                let nextIndex;
+                
+                if (data.focus_change === 'next') {
+                    nextIndex = currentIndex + 1 >= focusable.length ? 0 : currentIndex + 1;
+                } else {
+                    nextIndex = currentIndex - 1 < 0 ? focusable.length - 1 : currentIndex - 1;
+                }
+                
+                focusable[nextIndex].focus();
+                
+            } else if (data.trigger_click) {
+                // Simulate click on focused element
+                document.activeElement.click();
+            }
         });
     </script>
 </body>

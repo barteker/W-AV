@@ -2,3 +2,4 @@
 _defunct
 .credentials
 node_modules
+venv
