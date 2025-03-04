@@ -365,6 +365,7 @@ app.get('/:type', async (req, res) => {
             default:
                 throw new Error('Invalid type');
         }
+        module.exports = data;
         res.json(data.body.items);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -379,16 +380,17 @@ app.post('/update-display', (req, res) => {
     res.json({ success: true });
 });
 
-// Add this near your other routes
+// Update the existing ui-update route
 app.post('/ui-update', (req, res) => {
     try {
-        const { tab, item, selectTab } = req.body;
+        const { tab, item, returnToTabs, focus_change } = req.body;
         
         // Emit the update to all connected clients
         io.emit('ui-update', { 
             tab, 
             item,
-            selectTab
+            returnToTabs,
+            focus_change // Add this to pass through any focus change commands
         });
         
         res.json({ success: true });
@@ -403,9 +405,6 @@ app.use((error, req, res, next) => {
     console.error('Error:', error);
     res.status(500).json({ error: error.message });
 });
-
-let currentTab = 'playlists';
-let currentItem = 0;
 
 
 
