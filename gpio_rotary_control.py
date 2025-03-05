@@ -101,7 +101,7 @@ def get_encoder_value():
     
     return 0
 
-def update_interface(tab=None, item=None, returnToTabs=False, focus_change=None):
+def update_interface(tab=None, item=None, returnToTabs=False, focus_change=None, trigger_click=False):
     """Send interface update to server"""
     try:
         data = {
@@ -113,6 +113,8 @@ def update_interface(tab=None, item=None, returnToTabs=False, focus_change=None)
             data['item'] = item
         if focus_change is not None:
             data['focus_change'] = focus_change
+        if trigger_click:
+            data['trigger_click'] = True
             
         requests.post('http://localhost:8888/ui-update', json=data)
     except Exception as e:
@@ -120,19 +122,12 @@ def update_interface(tab=None, item=None, returnToTabs=False, focus_change=None)
 
 def handle_selection():
     """Handle selection button press"""
-    global current_tab, current_item, items
+    global current_tab, current_item
     
     try:
-        if current_item == 0:  # Back button
-            update_interface(returnToTabs=True)
-            logging.info("Returning to tabs")
-        else:
-            if 0 <= current_item-1 < len(items):  # Subtract 1 to account for back button
-                item = items[current_item-1]
-                if item.get('uri'):
-                    requests.post('http://localhost:8888/play-context', 
-                                json={'uri': item['uri']})
-                    logging.info(f"Playing: {item['name']} ({item['uri']})")
+        # We can't access document in Python - rely on sending trigger_click to the frontend instead
+        update_interface(trigger_click=True)
+        logging.info("Selection triggered for current focused element")
     except Exception as e:
         logging.error(f"Selection error: {e}")
 
@@ -156,17 +151,17 @@ def main():
                 focus_direction = 'next' if rotation > 0 else 'previous'
                 update_interface(focus_change=focus_direction)
                 logging.info(f"Focus change: {focus_direction}")
-                # Update selection based on rotation
-                # Add 1 to max items to account for back button
-                current_item = max(0, min(current_item + rotation, len(items) + 1))
-                update_interface(item=current_item)
-                logging.info(f"Current item: {current_item}")
-                logging.info(f"Total items: {len(items)}")
-            
+                
+                # We don't need to update the selection directly anymore
+                # The frontend will handle this through focusing elements
+                
             # Check select button
             if GPIO.input(SELECT_BTN) == GPIO.LOW:
-                time.sleep(0.2)  # Debounce
+                time.sleep(0.07)  # Debounce
                 if GPIO.input(SELECT_BTN) == GPIO.LOW:
+                    # Send trigger_click to server
+                    update_interface(trigger_click=True)
+                    logging.info("Button clicked")
                     handle_selection()
                     
                     while GPIO.input(SELECT_BTN) == GPIO.LOW:

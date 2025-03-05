@@ -383,14 +383,15 @@ app.post('/update-display', (req, res) => {
 // Update the existing ui-update route
 app.post('/ui-update', (req, res) => {
     try {
-        const { tab, item, returnToTabs, focus_change } = req.body;
+        const { tab, item, returnToTabs, focus_change, trigger_click } = req.body;
         
         // Emit the update to all connected clients
         io.emit('ui-update', { 
             tab, 
             item,
             returnToTabs,
-            focus_change // Add this to pass through any focus change commands
+            focus_change,
+            trigger_click
         });
         
         res.json({ success: true });

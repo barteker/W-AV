@@ -1,0 +1,160 @@
+body {
+    background-color: #050505;
+    color: aliceblue;
+
+    @font-face {
+        font-family: ClashGrotesk;
+        src: url("ClashGrotesk-Variable.ttf");
+    }
+
+    font-family: 'ClashGrotesk',
+    sans-serif;
+}
+
+.controls {
+    margin: 20px;
+    padding: 10px;
+}
+
+button {
+    margin: 5px;
+    padding: 10px;
+}
+
+#status {
+    padding: 10px;
+    margin: 10px;
+    color: #c4c4c4;
+}
+
+.error {
+    color: #e74c3c;
+}
+
+.library {
+    margin: 20px;
+    padding: 10px;
+    max-height: 500px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.tabs {
+    margin-bottom: 15px;
+    padding: 5px;
+    border-bottom: 2px solid #333;
+}
+
+.tab-btn {
+    background: #525252;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+}
+
+.tab-btn.active {
+    background: #1db954;
+}
+
+.tab-btn.highlighted {
+    background: #383838;
+    outline: 2px solid #1db954;
+}
+
+.library-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    cursor: pointer;
+    border-bottom: 1px solid #282828;
+}
+
+.library-item:hover {
+    background: #282828;
+}
+
+.library-item img {
+    width: 50px;
+    height: 50px;
+    margin-right: 15px;
+}
+
+.library-item.selected {
+    background: #1db954;
+}
+
+.library-item.highlighted {
+    background-color: #383838;
+    outline: 2px solid #1db954;
+}
+
+.pagination-controls {
+    text-align: center;
+    margin: 10px 0;
+    padding: 10px 0;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.page-btn {
+    background: #282828;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    cursor: pointer;
+}
+
+.page-btn:hover {
+    background: #383838;
+}
+
+.page-btn.highlighted {
+    outline: 2px solid #1db954;
+    background-color: #383838;
+}
+
+.back-button {
+    background-color: #181818;
+    text-align: center;
+    font-weight: bold;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.back-button:hover {
+    background-color: #282828;
+}
+
+.back-button.highlighted {
+    background-color: #383838;
+}
+
+.artist {
+    color: #b3b3b3;
+    font-size: 0.9em;
+}
+
+:focus {
+    outline: 2px solid #1db954;
+    outline-offset: -2px;
+}
+
+.library-item:focus {
+    background-color: #383838;
+}
+
+.tab-btn:focus {
+    background-color: #383838;
+}
+
+#library-content {
+    flex-grow: 1;
+    min-height: 300px;
+    overflow-y: auto;
+    border-top: 1px solid #333;
+    border-bottom: 1px solid #333;
+}
