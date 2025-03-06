@@ -34,16 +34,20 @@ button {
 .library {
     margin: 20px;
     padding: 10px;
-    max-height: 500px;
+    max-height: 80vh; /* Limit height so users can see there's more content */
     overflow-y: auto;
     display: flex;
     flex-direction: column;
 }
 
 .tabs {
+    position: sticky;
+    top: 0;
     margin-bottom: 15px;
     padding: 5px;
     border-bottom: 2px solid #333;
+    background-color: #050505; /* Match your page background */
+    z-index: 10;
 }
 
 .tab-btn {
@@ -55,6 +59,7 @@ button {
 
 .tab-btn.active {
     background: #1db954;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
 }
 
 .tab-btn.highlighted {
@@ -157,4 +162,5 @@ button {
     overflow-y: auto;
     border-top: 1px solid #333;
     border-bottom: 1px solid #333;
+    padding-bottom: 20px;
 }

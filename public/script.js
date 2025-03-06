@@ -2,6 +2,10 @@ const statusEl = document.getElementById('status');
 const params = new URLSearchParams(window.location.search);
 const token = params.get('token');
 
+// creates global storage for focusable elements
+let cachedFocusableElements = [];
+let lastFocusableUpdate = 0;
+
 if (!token) {
     statusEl.textContent = 'No token found, redirecting...';
     window.location.href = '/auto-login';
@@ -12,10 +16,13 @@ if (!token) {
 // Move socket initialization outside of onSpotifyWebPlaybackSDKReady
 const socket = io();
 
+// At the top of your script.js file, add this line
+let player; // Define player globally
+
 window.onSpotifyWebPlaybackSDKReady = () => {
     statusEl.textContent = 'SDK Ready, creating player...';
 
-    const player = new Spotify.Player({
+    player = new Spotify.Player({ // Remove 'const' here
         name: 'W/AV Device',
         getOAuthToken: cb => { cb(token); },
         volume: 0.5
@@ -98,24 +105,66 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 
     player.addListener('player_state_changed', state => {
         if (state) {
-            document.getElementById('nowPlaying').textContent =
+            // Update global playback state
+            window.playerState = {
+                isPlaying: !state.paused,
+                currentUri: state.context ? state.context.uri : 
+                           (state.track_window.current_track ? state.track_window.current_track.uri : null),
+                deviceReady: true
+            };
+            
+            // Update UI
+            document.getElementById('nowPlaying').textContent = 
                 `Now Playing: ${state.track_window.current_track.name}`;
-            document.getElementById('playPauseBtn').textContent =
+            document.getElementById('playPauseBtn').textContent = 
                 state.paused ? 'Play' : 'Pause';
+                
+            console.log('Playback state updated:', window.playerState);
         }
     });
 
     // Control buttons
     document.getElementById('playPauseBtn').onclick = () => {
-        player.togglePlay();
+        // Use the API endpoint instead of player.togglePlay()
+        fetch('/play', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Play/pause response:', data);
+        })
+        .catch(error => {
+            console.error('Play/pause error:', error);
+        });
     };
 
     document.getElementById('prevBtn').onclick = () => {
-        player.previousTrack();
+        fetch('/previous', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Previous track response:', data);
+        })
+        .catch(error => {
+            console.error('Previous track error:', error);
+        });
     };
 
     document.getElementById('nextBtn').onclick = () => {
-        player.nextTrack();
+        fetch('/next', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Next track response:', data);
+        })
+        .catch(error => {
+            console.error('Next track error:', error);
+        });
     };
 
     setInterval(() => {
@@ -131,112 +180,6 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             });
     }, 30 * 60 * 1000);
 
-
-
-
-
-    // Update audio processing when playback state changes
-    player.addListener('player_state_changed', state => {
-        if (state && state.track_window.current_track) {
-            // Get the audio element (this requires some browser-specific handling)
-            const audioElement = document.querySelector('audio');
-            if (audioElement) {
-                const source = audioContext.createMediaElementSource(audioElement);
-                source.connect(sourceNode);
-            }
-        }
-    });
-
-    // Add this to your JavaScript
-    document.getElementById('reset-eq').onclick = () => {
-        equalizer.forEach((filter, index) => {
-            filter.gain.value = 0;
-            document.getElementById(`eq-${frequencies[index]}`).value = 0;
-        });
-    };
-
-    // Add pagination handlers
-    let currentPage = 0;
-    const itemsPerPage = 20;
-
-    document.getElementById('nextPage').onclick = () => {
-        currentPage++;
-        loadLibraryContent(currentTab, currentPage * itemsPerPage);
-    };
-
-    document.getElementById('prevPage').onclick = () => {
-        if (currentPage > 0) {
-            currentPage--;
-            loadLibraryContent(currentTab, currentPage * itemsPerPage);
-        }
-    };
-
-    // Update loadLibraryContent function to handle pagination
-    function loadLibraryContent(tab, offset = 0) {
-        const contentDiv = document.getElementById('library-content');
-        contentDiv.innerHTML = 'Loading...';
-        
-        // Clear any existing library items first
-        document.querySelectorAll('.library-item').forEach(item => {
-            item.remove();
-        });
-
-        fetch(`/${tab}?offset=${offset}&limit=${itemsPerPage}`)
-            .then(response => response.json())
-            .then(items => {
-                renderLibraryItems(items, tab);
-
-                // Show/hide pagination buttons
-                document.getElementById('prevPage').style.display =
-                    offset > 0 ? 'inline-block' : 'none';
-                
-                // Dispatch an event to signal that content is loaded
-                document.dispatchEvent(new CustomEvent('library-content-loaded'));
-                console.log('Library content loaded for tab:', tab);
-            })
-            .catch(error => {
-                contentDiv.innerHTML = `Error loading ${tab}: ${error.message}`;
-                console.error('Failed to load library content:', error);
-            });
-    }
-
-    // Handle WebSocket updates
-    socket.on('display-update', (data) => {
-        updateLibraryDisplay(data.items);
-        // Highlight selected item
-        document.querySelectorAll('.library-item').forEach((item, index) => {
-            item.classList.toggle('selected', index === data.current_item);
-        });
-    });
-
-    // Update the socket.io handler in your JavaScript
-    socket.on('interface-update', (data) => {
-        if (data.select_tab) {
-            // Actually switch tabs and load content
-            const tabButtons = document.querySelectorAll('.tab-btn');
-            tabButtons[data.tab].click();
-        } else {
-            // Just highlight the selection
-            if (data.item <= 2) {
-                // Highlight tab
-                document.querySelectorAll('.tab-btn').forEach((btn, index) => {
-                    btn.classList.toggle('highlighted', index === data.tab);
-                });
-            } else {
-                // Highlight library item
-                const items = document.querySelectorAll('.library-item');
-                items.forEach((item, index) => {
-                    item.classList.toggle('selected', index === (data.item - 3));
-                });
-
-                // Scroll into view if needed
-                const selectedItem = items[data.item - 3];
-                if (selectedItem) {
-                    selectedItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }
-            }
-        }
-    });
 };
 
 // Add logout button handler
@@ -307,65 +250,77 @@ function loadLibraryContent(tab, offset = 0) {
         });
 }
 
+// File: /home/wave/W-AV/public/script.js
+
+// 1. First, create a unified play function to be used by both UI clicks and rotary encoder
+function playUri(uri) {
+    // Update UI immediately for responsive feel
+    document.getElementById('nowPlaying').textContent = 'Loading...';
+    
+    return fetch('/play-context', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uri })
+    })
+    .then(response => {
+        if (!response.ok) throw new Error(`Playback request failed: ${response.status}`);
+        return response.json();
+    })
+    .then(data => {
+        console.log('Play response:', data);
+        return data;
+    });
+    // Remove the setTimeout completely
+}
+
+// 2. Update the library-item click handler in renderLibraryItems() to use this function
 function renderLibraryItems(items, tab) {
     const contentDiv = document.getElementById('library-content');
-
-    // Add back button at the top
-    let html = `
-                <div class="back-button library-item" data-action="back">
-                    <div>↑ Back to Tabs</div>
-                </div>
-            `;
-
-    // Add library items
-    html += items.map((item, index) => {
+    
+    // No more back button - just directly render library items
+    let html = items.map((item, index) => {
         if (tab === 'albums') {
             const album = item.album;
             return `
-                        <div class="library-item" data-uri="${album.uri}" data-index="${index}">
-                            <img src="${album.images[0]?.url || 'default-cover.png'}" alt="Cover">
-                            <div>
-                                <div>${album.name}</div>
-                                <div class="artist">${album.artists[0]?.name || 'Unknown Artist'}</div>
-                            </div>
-                        </div>
-                    `;
+                <div class="library-item" tabindex="0" data-uri="${album.uri}" data-index="${index}">
+                    <img src="${album.images[0]?.url || 'default-cover.png'}" alt="Cover">
+                    <div>
+                        <div>${album.name}</div>
+                        <div class="artist">${album.artists[0]?.name || 'Unknown Artist'}</div>
+                    </div>
+                </div>
+            `;
         } else {
             return `
-                        <div class="library-item" data-uri="${item.uri || item.track?.uri}" data-index="${index}">
-                            <img src="${item.images?.[0]?.url || item.track?.album?.images?.[0]?.url || 'default-cover.png'}" 
-                                 alt="Cover">
-                            <div>
-                                <div>${item.name || item.track?.name}</div>
-                                <div class="artist">
-                                    ${item.owner?.display_name || item.artists?.[0]?.name ||
-                item.track?.artists?.[0]?.name || 'Unknown'}
-                                </div>
-                            </div>
+                <div class="library-item" tabindex="0" data-uri="${item.uri || item.track?.uri}" data-index="${index}">
+                    <img src="${item.images?.[0]?.url || item.track?.album?.images?.[0]?.url || 'default-cover.png'}" 
+                         alt="Cover">
+                    <div>
+                        <div>${item.name || item.track?.name}</div>
+                        <div class="artist">
+                            ${item.owner?.display_name || item.artists?.[0]?.name ||
+                             item.track?.artists?.[0]?.name || 'Unknown'}
                         </div>
-                    `;
+                    </div>
+                </div>
+            `;
         }
     }).join('');
 
-    contentDiv.innerHTML = html;
-
-    // Add click handler for back button
-    const backButton = document.querySelector('.back-button');
-    if (backButton) {
-        backButton.onclick = () => {
-            // Send back command via socket
-            fetch('/ui-update', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    returnToTabs: true
-                })
-            });
-        };
+    // Handle empty content case
+    if (!html) {
+        html = '<div class="no-items">No items found</div>';
     }
 
+    contentDiv.innerHTML = html;
+
     // Add click handlers for items
-    document.querySelectorAll('.library-item:not(.back-button)').forEach((item, index) => {
+    document.querySelectorAll('.library-item').forEach((item, index) => {
+        // Ensure all items have tabindex
+        if (item.getAttribute('tabindex') === null) {
+            item.setAttribute('tabindex', '0');
+        }
+        
         item.onclick = () => {
             const uri = item.dataset.uri;
             if (!uri) return;
@@ -377,11 +332,8 @@ function renderLibraryItems(items, tab) {
 
             item.classList.add('selected');
 
-            fetch('/play-context', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ uri })
-            }).catch(error => {
+            // Use the unified playUri function
+            playUri(uri).catch(error => {
                 console.error('Play error:', error);
             });
         };
@@ -411,157 +363,122 @@ document.getElementById('prevPage').onclick = () => {
 // Add to your index.html socket.io handler
 socket.on('ui-update', function (data) {
     if (data.focus_change) {
-        // Define our navigation groups
-        const tabElements = Array.from(document.querySelectorAll('.tab-btn'));
-        const libraryElements = Array.from(document.querySelectorAll('.library-item, #prevPage, #nextPage'))
-            .filter(el => !el.disabled && el.offsetParent !== null);
-
-        // Determine which group we're currently in
-        const activeElement = document.activeElement;
-        const inTabGroup = tabElements.includes(activeElement);
-        const inLibraryGroup = libraryElements.includes(activeElement);
-
-        // Handle navigation based on current group
-        if (inTabGroup) {
-            // We're in the tabs section
-            const currentIndex = tabElements.indexOf(activeElement);
-            let nextIndex;
-
-            if (data.focus_change === 'next') {
-                if (currentIndex === tabElements.length - 1) {
-                    // Last tab, moving next - jump to first library item
-                    tabElements.forEach(el => el.classList.remove('highlighted'));
-                    if (libraryElements.length > 0) {
-                        libraryElements[0].focus();
-                        libraryElements[0].classList.add('highlighted');
-                    }
-                    return;
-                } else {
-                    // Move to next tab
-                    nextIndex = currentIndex + 1;
+        const now = Date.now();
+        
+        // Only rebuild focusable elements cache every 500ms or when needed
+        if (cachedFocusableElements.length === 0 || now - lastFocusableUpdate > 500) {
+            // Set tabindex only on initial load
+            document.querySelectorAll('.library-item').forEach((item, i) => {
+                if (item.getAttribute('tabindex') === null) {
+                    item.setAttribute('tabindex', '0');
                 }
-            } else {
-                // Move to previous tab or wrap around
-                nextIndex = currentIndex - 1 < 0 ? tabElements.length - 1 : currentIndex - 1;
-            }
-
-            // Apply focus to next tab
-            tabElements.forEach(el => el.classList.remove('highlighted'));
-            tabElements[nextIndex].focus();
-            tabElements[nextIndex].classList.add('highlighted');
-
-        } else if (inLibraryGroup) {
-            // We're in the library section
-            const currentIndex = libraryElements.indexOf(activeElement);
-            let nextIndex;
-
-            if (data.focus_change === 'next') {
-                nextIndex = currentIndex + 1 >= libraryElements.length ? 0 : currentIndex + 1;
-            } else {
-                if (currentIndex === 0) {
-                    // First library item, moving previous - jump to tabs
-                    libraryElements.forEach(el => el.classList.remove('highlighted'));
-                    // Focus on active tab
-                    const activeTab = document.querySelector('.tab-btn.active');
-                    if (activeTab) {
-                        activeTab.focus();
-                        activeTab.classList.add('highlighted');
-                    } else if (tabElements.length > 0) {
-                        // Fallback to last tab
-                        tabElements[tabElements.length - 1].focus();
-                        tabElements[tabElements[tabElements.length - 1].classList.add('highlighted')];
-                    }
-                    return;
-                } else {
-                    nextIndex = currentIndex - 1;
+            });
+            
+            // Add tabindex to pagination buttons if needed
+            ['#prevPage', '#nextPage'].forEach(id => {
+                const element = document.querySelector(id);
+                if (element && element.getAttribute('tabindex') === null) {
+                    element.setAttribute('tabindex', '0');
                 }
-            }
-
-            // Apply focus to next library item
-            libraryElements.forEach(el => el.classList.remove('highlighted'));
-            libraryElements[nextIndex].focus();
-            libraryElements[nextIndex].classList.add('highlighted');
-
+            });
+            
+            cachedFocusableElements = Array.from(document.querySelectorAll(
+                '.tab-btn, [tabindex="0"], .library-item, #prevPage, #nextPage'
+            )).filter(el => !el.disabled && el.offsetParent !== null);
+            
+            lastFocusableUpdate = now;
+            console.log('Rebuilt focusable elements cache, count:', cachedFocusableElements.length);
+        }
+        
+        // Find current position in focusable elements array
+        const currentIndex = cachedFocusableElements.indexOf(document.activeElement);
+        console.log('Current focus index:', currentIndex, 'Direction:', data.focus_change);
+        
+        // If nothing is focused yet, start with the first element
+        let nextIndex;
+        if (currentIndex === -1) {
+            nextIndex = 0;
         } else {
-            // Not in any group, set focus to active tab
-            const activeTab = document.querySelector('.tab-btn.active');
-            if (activeTab) {
-                activeTab.focus();
-                activeTab.classList.add('highlighted');
+            // Calculate next index based on direction
+            if (data.focus_change === 'next') {
+                nextIndex = (currentIndex + 1) % cachedFocusableElements.length;
+            } else {
+                nextIndex = (currentIndex - 1 + cachedFocusableElements.length) % cachedFocusableElements.length;
             }
+        }
+        
+        // Remove highlight from all elements
+        document.querySelectorAll('.highlighted').forEach(el => {
+            el.classList.remove('highlighted');
+        });
+        
+        // Focus and highlight the next element
+        if (cachedFocusableElements[nextIndex]) {
+            cachedFocusableElements[nextIndex].focus();
+            cachedFocusableElements[nextIndex].classList.add('highlighted');
+            
+            // Ensure element is visible
+            cachedFocusableElements[nextIndex].scrollIntoView({
+                behavior: 'auto', // Changed from smooth to auto for better responsiveness
+                block: 'nearest'
+            });
+            
+            console.log('New focus:', nextIndex, cachedFocusableElements[nextIndex].textContent || cachedFocusableElements[nextIndex].className);
         }
     } else if (data.trigger_click) {
-        // Simulate click on focused element
         const activeElement = document.activeElement;
         
-        // Check if we're clicking on a tab
-        if (activeElement && activeElement.classList.contains('tab-btn')) {
-            // Handle tab click with special logic
-            activeElement.click();
+        if (activeElement) {
+            console.log('Triggering click on:', activeElement.tagName, activeElement.className);
             
-            // Wait for content to load, then focus on the first library item
-            setTimeout(() => {
-                const firstLibraryItem = document.querySelector('.library-item');
-                if (firstLibraryItem) {
-                    document.querySelectorAll('.highlighted').forEach(el => {
-                        el.classList.remove('highlighted');
+            if (activeElement.classList.contains('tab-btn')) {
+                // Tab button handling - no changes needed
+                activeElement.click();
+                
+                // ...existing tab click code...
+            } else if (activeElement.classList.contains('library-item')) {
+                // Library item handling - use the unified play function
+                const uri = activeElement.dataset.uri;
+                
+                if (uri) {
+                    // Update UI
+                    document.querySelectorAll('.library-item').forEach(i => {
+                        i.classList.remove('selected');
                     });
-                    firstLibraryItem.focus();
-                    firstLibraryItem.classList.add('highlighted');
+                    
+                    activeElement.classList.add('selected');
+                    
+                    // Use unified playUri function with UI updates after success
+                    playUri(uri)
+                        .then(data => {
+                            // Update highlighting after successful play
+                            if (data.success) {
+                                document.querySelectorAll('.highlighted').forEach(el => {
+                                    if (!el.classList.contains('selected')) {
+                                        el.classList.remove('highlighted');
+                                    }
+                                });
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Play error:', error);
+                        });
                 }
-            }, 1000); // Give enough time for content to load
-        } else {
-            // Normal click for other elements
-            activeElement.click();
-        }
-    } else if (data.returnToTabs) {
-        // Handle return to tabs - existing code works fine
-        const activeTab = document.querySelector('.tab-btn.active');
-        if (activeTab) {
-            document.querySelectorAll('.highlighted').forEach(el => {
-                el.classList.remove('highlighted');
-            });
-            activeTab.focus();
-            activeTab.classList.add('highlighted');
-        }
-    } else if (data.tab !== undefined) {
-        // When a tab is explicitly selected via index
-        const tabs = document.querySelectorAll('.tab-btn');
-        if (tabs[data.tab]) {
-            tabs[data.tab].click();
-            
-            // Use a more reliable approach with multiple attempts
-            let attempts = 0;
-            const maxAttempts = 10;
-            const checkForLibraryItems = () => {
-                const firstItem = document.querySelector('.library-item');
-                if (firstItem) {
-                    document.querySelectorAll('.highlighted').forEach(el => {
-                        el.classList.remove('highlighted');
-                    });
-                    firstItem.focus();
-                    firstItem.classList.add('highlighted');
-                    console.log('Successfully focused on first library item');
-                } else if (attempts < maxAttempts) {
-                    attempts++;
-                    setTimeout(checkForLibraryItems, 300);
-                    console.log('Waiting for library items to load, attempt:', attempts);
-                }
-            };
-            
-            // Start checking after a delay to allow the click to register
-            setTimeout(checkForLibraryItems, 500);
-        }
-    } else if (data.item !== undefined) {
-        // When an item is selected from the library - existing code works fine
-        const items = document.querySelectorAll('.library-item');
-        if (items[data.item]) {
-            document.querySelectorAll('.highlighted').forEach(el => {
-                el.classList.remove('highlighted');
-            });
-            items[data.item].focus();
-            items[data.item].classList.add('highlighted');
-            items[data.item].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } else if (activeElement.id === 'prevPage' || activeElement.id === 'nextPage') {
+                // Pagination button handling - no changes
+                activeElement.click();
+            } else if (activeElement.id === 'playPauseBtn' || 
+                       activeElement.id === 'prevBtn' || 
+                       activeElement.id === 'nextBtn' || 
+                       activeElement.id === 'logoutBtn') {
+                // Control buttons - no changes
+                activeElement.click();
+            } else {
+                // Standard click behavior - no changes
+                activeElement.click();
+            }
         }
     }
 });
+
+

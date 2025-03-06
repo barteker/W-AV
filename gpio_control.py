@@ -82,13 +82,10 @@ def handle_button(channel):
                 state = response.json()
                 was_playing = state and state.get('is_playing')
             
-            # Skip to next track
+            # Skip to next track without automatically playing
             requests.post('http://localhost:8888/next')
+            logging.info("Skipped to next track")
             
-            # Resume playback if it was playing before
-            if was_playing:
-                time.sleep(0.5)  # Small delay to allow track change
-                requests.post('http://localhost:8888/play')
             
         elif channel == PREV_BTN:
             logging.info("Previous button pressed")
@@ -99,13 +96,11 @@ def handle_button(channel):
                 state = response.json()
                 was_playing = state and state.get('is_playing')
             
-            # Skip to previous track
+            # Skip to previous track without automatically playing
             requests.post('http://localhost:8888/previous')
+            logging.info("Skipped to previous track")
             
-            # Resume playback if it was playing before
-            if was_playing:
-                time.sleep(0.5)  # Small delay to allow track change
-                requests.post('http://localhost:8888/play')
+
             
     except Exception as e:
         logging.error(f"Button press error: {e}")

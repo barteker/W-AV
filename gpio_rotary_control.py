@@ -10,17 +10,17 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
-# GPIO Setup
+# GPIO Pin Configuration
 ENCODER_A = 23    # Rotary encoder pin A
 ENCODER_B = 24    # Rotary encoder pin B
 SELECT_BTN = 27   # Select button
 
-# Navigation state
+# State tracking variables
+last_encoder_value = None
 current_tab = 0
 current_item = 0
-tabs = ['playlists', 'albums', 'liked-songs']
+tabs = ['playlists', 'albums', 'liked-songs'] 
 items = []
-last_encoder_value = None
 
 def fetch_tab_data(tab_name):
     """Fetch data for the specified tab"""
@@ -60,16 +60,19 @@ def fetch_tab_data(tab_name):
 def update_current_items():
     """Update items list based on current tab"""
     global items
-    items = fetch_tab_data(tabs[current_tab])
-    logging.info(f"Loaded {len(items)} items for tab {tabs[current_tab]}")
+    try:
+        items = fetch_tab_data(tabs[current_tab])
+        logging.info(f"Loaded {len(items)} items for tab {tabs[current_tab]}")
+    except Exception as e:
+        logging.error(f"Error updating items: {e}")
+        items = []
 
 def setup_gpio():
-    """Initialize GPIO pins"""
+    """Initialize GPIO pins with proper pull-up resistors"""
     try:
         GPIO.setmode(GPIO.BCM)
         GPIO.setwarnings(False)
         
-        # Setup encoder pins with pull-up resistors
         GPIO.setup(ENCODER_A, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.setup(ENCODER_B, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.setup(SELECT_BTN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
@@ -81,7 +84,7 @@ def setup_gpio():
         return False
 
 def get_encoder_value():
-    """Read rotary encoder value"""
+    """Read rotary encoder value and determine direction of rotation"""
     global last_encoder_value
     
     clk_state = GPIO.input(ENCODER_A)
@@ -122,52 +125,47 @@ def update_interface(tab=None, item=None, returnToTabs=False, focus_change=None,
 
 def handle_selection():
     """Handle selection button press"""
-    global current_tab, current_item
-    
     try:
-        # We can't access document in Python - rely on sending trigger_click to the frontend instead
         update_interface(trigger_click=True)
         logging.info("Selection triggered for current focused element")
     except Exception as e:
         logging.error(f"Selection error: {e}")
 
 def main():
+    """Main program loop handling encoder input and button presses"""
     if not setup_gpio():
         return
     
-    global last_encoder_value, current_tab, current_item, items
+    global last_encoder_value
     last_encoder_value = GPIO.input(ENCODER_A)
     
     # Initial data load
-    update_current_items()
+    try:
+        update_current_items()
+    except Exception as e:
+        logging.error(f"Failed initial data load: {e}")
     
     try:
         while True:
-            # Read encoder
+            # Handle rotary encoder rotation
             rotation = get_encoder_value()
-            
             if rotation != 0:
-                # Determine focus change direction based on rotation
                 focus_direction = 'next' if rotation > 0 else 'previous'
                 update_interface(focus_change=focus_direction)
                 logging.info(f"Focus change: {focus_direction}")
                 
-                # We don't need to update the selection directly anymore
-                # The frontend will handle this through focusing elements
-                
-            # Check select button
+            # Handle button press
             if GPIO.input(SELECT_BTN) == GPIO.LOW:
-                time.sleep(0.07)  # Debounce
+                time.sleep(0.02)  # Debounce
                 if GPIO.input(SELECT_BTN) == GPIO.LOW:
-                    # Send trigger_click to server
                     update_interface(trigger_click=True)
                     logging.info("Button clicked")
-                    handle_selection()
                     
-                    while GPIO.input(SELECT_BTN) == GPIO.LOW:
-                        time.sleep(0.05)
+                    # Implement cooldown period after button press
+                    cooldown_time = 0.2  # 200ms cooldown
+                    time.sleep(cooldown_time)
             
-            time.sleep(0.001)  # Small delay
+            time.sleep(0.001)  # Small delay for CPU efficiency
             
     except KeyboardInterrupt:
         logging.info("Shutting down...")

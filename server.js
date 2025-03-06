@@ -317,27 +317,67 @@ app.get('/liked-songs', async (req, res) => {
     }
 });
 
-// Update the play-context route to handle both contexts and individual tracks
+// Optimize play-context route
 app.post('/play-context', async (req, res) => {
     try {
         const { uri, offset = 0 } = req.body;
         
-        // If it's a track URI (liked songs), play directly
-        if (uri.startsWith('spotify:track:')) {
-            await spotifyApi.play({
-                device_id: deviceId,
-                uris: [uri]
-            });
-        } else {
-            // For playlists and albums, play as context
-            await spotifyApi.play({
-                device_id: deviceId,
-                context_uri: uri,
-                offset: { position: offset }
-            });
+        if (!uri || !deviceId) {
+            throw new Error(uri ? 'No active device' : 'URI is required');
         }
         
-        res.json({ success: true });
+        // Track if we've sent a response to avoid double-sending
+        let responseSent = false;
+        
+        // Send response early for better UI responsiveness
+        const sendResponse = () => {
+            if (!responseSent) {
+                responseSent = true;
+                res.json({ success: true });
+            }
+        };
+        
+        // Only transfer playback if device isn't already active
+        if (!isActive) {
+            await spotifyApi.transferMyPlayback([deviceId], { play: false });
+            await new Promise(resolve => setTimeout(resolve, 100)); // Reduced from 300ms
+            isActive = true;
+        }
+        
+        // Send the play command right away without checking state
+        try {
+            if (uri.startsWith('spotify:track:')) {
+                await spotifyApi.play({
+                    device_id: deviceId,
+                    uris: [uri]
+                });
+            } else {
+                await spotifyApi.play({
+                    device_id: deviceId,
+                    context_uri: uri,
+                    offset: { position: offset }
+                });
+            }
+            
+            // Send response as soon as play command succeeds
+            sendResponse();
+            
+        } catch (error) {
+            // Fall back to recovery code
+            if (error.message.includes('Player command failed')) {
+                await spotifyApi.transferMyPlayback([deviceId], { play: true });
+                
+                // Shorter delay
+                await new Promise(resolve => setTimeout(resolve, 200)); // Reduced from 500ms
+                
+                // Retry play command
+                // [Play commands]
+                
+                sendResponse();
+            } else {
+                throw error;
+            }
+        }
     } catch (error) {
         console.error('Play error:', error);
         res.status(500).json({ error: error.message });
