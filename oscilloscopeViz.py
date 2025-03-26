@@ -1,9 +1,14 @@
 import sys
+import os
 import pyaudio
 import numpy as np
 import pyqtgraph as pg
-from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QComboBox, QPushButton, QHBoxLayout
-from PyQt6.QtCore import QThread, pyqtSignal
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QComboBox, QPushButton, QHBoxLayout
+from PyQt5.QtCore import QThread, pyqtSignal, Qt
+
+# Set environment variables for running as service
+os.environ["QT_QPA_PLATFORM"] = "xcb"
+os.environ["DISPLAY"] = ":1"
 
 class AudioStreamThread(QThread):
     data_signal = pyqtSignal(np.ndarray)
@@ -44,14 +49,21 @@ class AudioStreamThread(QThread):
 class MicrophoneOscilloscope(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Bruh")
-        self.setGeometry(100, 100, 1920, 480) 
-# 480x1920
+        self.setWindowTitle("W/AV Oscilloscope")
+        self.setGeometry(100, 100, 1920, 480)
+        # For service mode - make window frameless and fullscreen
+        self.setWindowFlags(self.windowFlags() | Qt.FramelessWindowHint)
+        
         self.p = pyaudio.PyAudio()
         self.device_index = None
         self.audio_thread = None
 
         self.initUI()
+        
+        # Auto-connect to first available device when running as service
+        if len(self.devices['names']) > 0:
+            self.device_selector.setCurrentIndex(0)
+            self.connect_device()
 
     def initUI(self):
         main_widget = QWidget()
@@ -72,7 +84,6 @@ class MicrophoneOscilloscope(QMainWindow):
 
         self.plot_widget = pg.PlotWidget()
         self.plot_widget.setBackground("black")
-        # self.plot_widget.setYRange(-32768, 32768)
         self.plot_widget.setYRange(-10000, 10000)
         self.plot_widget.setXRange(0, 4096)
         self.plot_widget.showGrid(x=False, y=False)
@@ -140,5 +151,5 @@ class MicrophoneOscilloscope(QMainWindow):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MicrophoneOscilloscope()
-    window.show()
-    sys.exit(app.exec())
+    window.showFullScreen()  # For service mode
+    sys.exit(app.exec_())  # Note: In PyQt5 it's exec_() not exec()
