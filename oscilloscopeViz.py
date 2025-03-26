@@ -6,14 +6,14 @@ import pyqtgraph as pg
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QComboBox, QPushButton, QHBoxLayout
 from PyQt5.QtCore import QThread, pyqtSignal, Qt
 
-# Set environment variables for running as service
+# Set environment variables for running on second display
 os.environ["QT_QPA_PLATFORM"] = "xcb"
-os.environ["DISPLAY"] = ":1"
+os.environ["DISPLAY"] = ":0.1"  # Use second display
 
 class AudioStreamThread(QThread):
     data_signal = pyqtSignal(np.ndarray)
 
-    def __init__(self, device_index, chunk=4096, rate=44100):
+    def __init__(self, device_index=None, chunk=4096, rate=44100):
         super().__init__()
         self.device_index = device_index
         self.CHUNK = chunk
@@ -22,14 +22,35 @@ class AudioStreamThread(QThread):
         self.CHANNELS = 1
         self.running = True
         self.p = pyaudio.PyAudio()
-        self.stream = self.p.open(
-            format=self.FORMAT,
-            channels=self.CHANNELS,
-            rate=self.RATE,
-            input=True,
-            input_device_index=self.device_index,
-            frames_per_buffer=self.CHUNK
-        )
+        
+        # If no device specified, use default one
+        if self.device_index is None:
+            try:
+                # Try to use the default ALSA device
+                info = self.p.get_default_input_device_info()
+                self.device_index = info['index']
+                print(f"Using default device: {info['name']}")
+            except IOError:
+                # Fall back to the first available input device
+                for i in range(self.p.get_device_count()):
+                    info = self.p.get_device_info_by_index(i)
+                    if info['maxInputChannels'] > 0:
+                        self.device_index = i
+                        print(f"Using fallback device: {info['name']}")
+                        break
+        
+        try:
+            self.stream = self.p.open(
+                format=self.FORMAT,
+                channels=self.CHANNELS,
+                rate=self.RATE,
+                input=True,
+                input_device_index=self.device_index,
+                frames_per_buffer=self.CHUNK
+            )
+        except Exception as e:
+            print(f"Could not open audio stream: {e}")
+            self.running = False
 
     def run(self):
         while self.running:
@@ -50,8 +71,16 @@ class MicrophoneOscilloscope(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("W/AV Oscilloscope")
-        self.setGeometry(100, 100, 1920, 480)
-        # For service mode - make window frameless and fullscreen
+        
+        # Get screen dimensions or use default
+        screen_available = QApplication.instance().desktop().availableGeometry()
+        screen_width = screen_available.width()
+        screen_height = screen_available.height()
+        
+        # Set fullscreen size
+        self.setGeometry(0, 0, screen_width, screen_height)
+        
+        # Make window frameless and fullscreen
         self.setWindowFlags(self.windowFlags() | Qt.FramelessWindowHint)
         
         self.p = pyaudio.PyAudio()
