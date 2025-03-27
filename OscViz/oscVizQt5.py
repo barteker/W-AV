@@ -1,13 +1,9 @@
 import sys
 import pyaudio
 import numpy as np
-import pyqtgraph as pg
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QComboBox, QPushButton, QHBoxLayout
 from PyQt5.QtCore import QThread, pyqtSignal
-
-print(QApplication.instance())
-app = pg.mkQApp()
-print(QApplication.instance())
+import pyqtgraph as pg
 
 class AudioStreamThread(QThread):
     data_signal = pyqtSignal(np.ndarray)
@@ -140,11 +136,10 @@ class MicrophoneOscilloscope(QMainWindow):
         self.p.terminate()
         self.close()
 
-def main():
-    print(QApplication.instance())
-    window = MicrophoneOscilloscope()
-    window.show()
-    sys.exit(app.exec_())
-
 if __name__ == "__main__":
-    main()
+    app = QApplication(sys.argv)
+    window = MicrophoneOscilloscope()
+    window.move(1024, 0)
+    window.showFullScreen()
+#     window.show()
+    sys.exit(app.exec_())
