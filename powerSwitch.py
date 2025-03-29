@@ -9,7 +9,7 @@ from logging.handlers import RotatingFileHandler
 
 # Modified logging setup with rotation
 log_handler = RotatingFileHandler(
-    '/home/pi/power_switch.log',
+    '/home/wave/power_switch.log',
     maxBytes=1024*1024,  # 1MB per file
     backupCount=3        # Keep 3 backup files
 )
@@ -24,7 +24,15 @@ logging.basicConfig(
 POWER_SWITCH_PIN = 17  # GPIO17 (Pin 11)
 
 # Initialize variables
-shutdown_in_progress = False
+sleep_mode_active = False
+processes_to_manage = [
+    "node server.js",              # W-AV server
+    "python3 gpio_control.py",     # GPIO control
+    "python3 gpio_rotary_control.py", # Rotary encoder control
+    "python3 oscVizQt5.py",        # Oscilloscope visualizer
+    "python3 VolEQSliders.py",     # Volume/EQ control
+    "firefox --kiosk"              # Web interface
+]
 
 def setup():
     """Initialize GPIO pins"""
@@ -32,7 +40,7 @@ def setup():
     GPIO.setwarnings(False)
     
     # Setup power switch pin with pull-up resistor
-    # Switch should connect the pin to ground when in OFF position
+    # Switch should connect the pin to ground when in ON position
     GPIO.setup(POWER_SWITCH_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     
     logging.info("Power switch initialized on GPIO %d", POWER_SWITCH_PIN)
@@ -40,68 +48,217 @@ def setup():
 def clean_exit(signum, frame):
     """Handle clean exit when receiving termination signals"""
     logging.info("Termination signal received. Cleaning up...")
+    # If in sleep mode, wake up before exiting
+    if sleep_mode_active:
+        exit_sleep_mode()
     GPIO.cleanup()
     sys.exit(0)
 
-def gracefully_terminate_processes():
-    """Stop important processes before shutdown"""
-    processes_to_stop = [
-        "node server.js",     # W-AV server
-        "python3 gpio_control.py",
-        "python3 gpio_rotary_control.py"
-    ]
-    
-    logging.info("Gracefully terminating processes...")
-    
-    for process in processes_to_stop:
-        try:
-            # Find process ID by name
-            cmd = f"pgrep -f '{process}'"
-            result = subprocess.run(cmd, shell=True, text=True, capture_output=True)
-            
-            if result.stdout.strip():
-                pid = result.stdout.strip()
-                logging.info(f"Stopping process: {process} (PID: {pid})")
-                
-                # Send SIGTERM to allow graceful shutdown
-                subprocess.run(f"kill -15 {pid}", shell=True)
-                
-                # Wait a moment for process to terminate
-                time.sleep(1)
-                
-                # Check if process is still running and force kill if needed
-                check = subprocess.run(f"kill -0 {pid} 2>/dev/null || echo terminated", 
-                                      shell=True, text=True, capture_output=True)
-                
-                if "terminated" not in check.stdout:
-                    logging.info(f"Forcing termination of {process}")
-                    subprocess.run(f"kill -9 {pid}", shell=True)
-        except Exception as e:
-            logging.error(f"Error stopping {process}: {e}")
-    
-    # Give processes a moment to fully terminate
-    time.sleep(2)
-    logging.info("Process termination complete")
+def find_process_ids(process_pattern):
+    """Find all PIDs matching a pattern, returning a list"""
+    try:
+        cmd = f"pgrep -f '{process_pattern}'"
+        result = subprocess.run(cmd, shell=True, text=True, capture_output=True)
+        if result.stdout.strip():
+            # Return list of PIDs (might be multiple)
+            return result.stdout.strip().split('\n')
+        return []
+    except Exception as e:
+        logging.error(f"Error finding PIDs for {process_pattern}: {e}")
+        return []
 
-def initiate_shutdown():
-    """Perform system halt with graceful shutdown"""
-    global shutdown_in_progress
+def suspend_processes():
+    """Suspend power-intensive processes"""
+    logging.info("Suspending processes...")
     
-    if shutdown_in_progress:
+    # Save PIDs to a file for reliable resumption
+    pid_file = "/tmp/wave_suspended_pids.txt"
+    with open(pid_file, "w") as f:
+        for process in processes_to_manage:
+            try:
+                pids = find_process_ids(process)
+                if pids:
+                    for pid in pids:
+                        logging.info(f"Suspending process: {process} (PID: {pid})")
+                        f.write(f"{pid},{process}\n")
+                        
+                        # Send SIGSTOP to suspend the process
+                        try:
+                            os.kill(int(pid), signal.SIGSTOP)
+                            logging.info(f"Successfully sent SIGSTOP to PID {pid}")
+                        except Exception as e:
+                            logging.error(f"Failed to send SIGSTOP to PID {pid}: {e}")
+                else:
+                    logging.info(f"No PIDs found for process: {process}")
+            except Exception as e:
+                logging.error(f"Error in suspend_processes for {process}: {e}")
+    
+    logging.info("Process suspension complete")
+
+def resume_processes():
+    """Resume previously suspended processes"""
+    logging.info("Resuming processes...")
+    
+    # Read PIDs from the file
+    pid_file = "/tmp/wave_suspended_pids.txt"
+    if not os.path.exists(pid_file):
+        logging.warning("No suspended PID file found")
+        return
+    
+    with open(pid_file, "r") as f:
+        lines = f.readlines()
+        
+    for line in lines:
+        try:
+            if "," in line:
+                pid, process = line.strip().split(",", 1)
+                logging.info(f"Resuming process: {process} (PID: {pid})")
+                
+                # Check if process still exists
+                try:
+                    os.kill(int(pid), 0)  # This just checks if the process exists
+                    
+                    # Send SIGCONT to resume the process
+                    os.kill(int(pid), signal.SIGCONT)
+                    logging.info(f"Successfully sent SIGCONT to PID {pid}")
+                except ProcessLookupError:
+                    logging.warning(f"PID {pid} no longer exists, may need to restart {process}")
+                    # Here you could add code to restart the process
+        except Exception as e:
+            logging.error(f"Error resuming process from line '{line}': {e}")
+    
+    # Clean up the PID file
+    try:
+        os.remove(pid_file)
+    except:
+        pass
+    
+    logging.info("Process resume complete")
+
+def turn_off_display():
+    """Turn off HDMI display to save power"""
+    logging.info("Turning off HDMI display")
+    
+    try:
+        # Use vcgencmd as primary method (confirmed available)
+        subprocess.run("/usr/bin/vcgencmd display_power 0", shell=True)
+        
+        # Target the correct card1 DRM controls for your system
+        try:
+            subprocess.run("sudo sh -c 'echo off > /sys/class/drm/card1-HDMI-A-1/status'", shell=True)
+            subprocess.run("sudo sh -c 'echo off > /sys/class/drm/card1-HDMI-A-2/status'", shell=True)
+        except Exception as e:
+            logging.error(f"DRM control error: {e}")
+            
+        # Framebuffer blanking
+        subprocess.run("sudo sh -c 'echo 1 > /sys/class/graphics/fb0/blank'", shell=True)
+        
+        # Switch to a text console but don't kill X
+        subprocess.run("sudo chvt 1", shell=True)
+        
+        # Use DPMS with proper user context from the service file
+        try:
+            # Find the actual user running X
+            user_cmd = "who | grep '(:0)' | awk '{print $1}'"
+            x_user = subprocess.check_output(user_cmd, shell=True, text=True).strip()
+            if not x_user:
+                x_user = "wave"  # Default to 'wave' if detection fails
+                
+            # Use that user's authority to set DPMS
+            subprocess.run(f"sudo -u {x_user} DISPLAY=:0 XAUTHORITY=/home/{x_user}/.Xauthority xset dpms force off", shell=True)
+        except Exception as e:
+            logging.error(f"DPMS control error: {e}")
+    except Exception as e:
+        logging.error(f"Error turning off display: {e}")
+
+def turn_on_display():
+    """Turn on HDMI display"""
+    logging.info("Turning on HDMI display")
+    
+    try:
+        # Re-enable DRM outputs
+        try:
+            subprocess.run("sudo sh -c 'echo on > /sys/class/drm/card1-HDMI-A-1/status'", shell=True)
+            subprocess.run("sudo sh -c 'echo on > /sys/class/drm/card1-HDMI-A-2/status'", shell=True)
+        except:
+            pass
+            
+        # Unblank framebuffer
+        subprocess.run("sudo sh -c 'echo 0 > /sys/class/graphics/fb0/blank'", shell=True)
+        
+        # Use vcgencmd to power on HDMI
+        subprocess.run("/usr/bin/vcgencmd display_power 1", shell=True)
+        
+        # Switch back to GUI console
+        subprocess.run("sudo chvt 7", shell=True)
+        
+        # Reset DPMS
+        try:
+            # Use the same user detection approach
+            user_cmd = "who | grep '(:0)' | awk '{print $1}'"
+            x_user = subprocess.check_output(user_cmd, shell=True, text=True).strip()
+            if not x_user:
+                x_user = "wave"  # Default to 'wave' if detection fails
+                
+            # Turn DPMS back on
+            subprocess.run(f"sudo -u {x_user} DISPLAY=:0 XAUTHORITY=/home/{x_user}/.Xauthority xset dpms force on", shell=True)
+        except Exception as e:
+            logging.error(f"DPMS reset error: {e}")
+    except Exception as e:
+        logging.error(f"Error turning on display: {e}")
+
+def enter_sleep_mode():
+    """Put system into low-power sleep mode"""
+    global sleep_mode_active
+    
+    if sleep_mode_active:
         return
         
-    shutdown_in_progress = True
-    logging.info("Initiating shutdown sequence")
+    sleep_mode_active = True
+    logging.info("Entering sleep mode")
     
-    # First stop our custom processes
-    gracefully_terminate_processes()
+    # First suspend processes
+    suspend_processes()
     
-    # Then sync filesystems to prevent data loss
-    subprocess.run("sync", shell=True)
+    # Then turn off display
+    turn_off_display()
     
-    # Now halt the system
-    logging.info("Executing system halt")
-    os.system("sudo halt")  # Changed to halt for wake-on-GPIO capability
+    # Reduce CPU frequency to save power
+    subprocess.run("echo powersave | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor", shell=True)
+    
+    # Create a flag file that your processes can check
+    subprocess.run("touch /tmp/wav_sleep_mode", shell=True)
+    
+    logging.info("Sleep mode activated")
+
+def exit_sleep_mode():
+    """Exit sleep mode and restore normal operation"""
+    global sleep_mode_active
+    
+    if not sleep_mode_active:
+        return
+        
+    sleep_mode_active = False
+    logging.info("Exiting sleep mode")
+    
+    # Restore CPU frequency governor
+    subprocess.run("echo ondemand | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor", shell=True)
+    
+    # Restore maximum CPU frequency
+    subprocess.run("echo 1500000 | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_max_freq", shell=True)
+    
+    # Remove the tvservice calls and LED brightness controls that don't work
+    
+    # Remove sleep mode flag file
+    subprocess.run("rm -f /tmp/wav_sleep_mode", shell=True)
+    
+    # Turn display back on first 
+    turn_on_display()
+    
+    # Resume processes after display is on
+    resume_processes()
+    
+    logging.info("Normal operation restored")
 
 def monitor_switch():
     """Monitor the power switch state"""
@@ -123,7 +280,10 @@ def monitor_switch():
             if current_state != previous_state:
                 if current_state == GPIO.HIGH:  # Switch turned OFF
                     logging.info("Power switch turned OFF")
-                    initiate_shutdown()
+                    enter_sleep_mode()
+                else:  # Switch turned ON
+                    logging.info("Power switch turned ON")
+                    exit_sleep_mode()
                 
                 previous_state = current_state
         
@@ -139,11 +299,14 @@ def main():
         # Setup GPIO
         setup()
         
-        # Check initial switch state
+        # Check initial switch state and set mode accordingly
         if GPIO.input(POWER_SWITCH_PIN) == GPIO.HIGH:
             logging.info("Starting with power switch in OFF position")
+            enter_sleep_mode()
         else:
             logging.info("Starting with power switch in ON position")
+            # Make sure we're not in sleep mode
+            exit_sleep_mode()
         
         # Start monitoring
         monitor_switch()
@@ -151,6 +314,9 @@ def main():
     except Exception as e:
         logging.error(f"Error in power switch script: {e}")
     finally:
+        # Ensure we exit sleep mode if the script is terminating
+        if sleep_mode_active:
+            exit_sleep_mode()
         GPIO.cleanup()
         logging.info("GPIO cleaned up")
 
