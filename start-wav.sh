@@ -15,12 +15,23 @@ if ! pgrep -f "node.*server.js" > /dev/null; then
     sleep 5
 fi
 
-# Start Firefox in kiosk mode
-firefox --kiosk http://localhost:8888/ &
+# Disable the user service for oscviz to prevent duplicate starts
+systemctl --user stop oscviz.service
+systemctl --user disable oscviz.service
+
+# Set Firefox window position to ensure it's on the main display
+export MOZ_X_POSITION=0
+export MOZ_Y_POSITION=0
+
+# Start Firefox in kiosk mode on the primary display
+WM_CLASS="Firefox.firefox" firefox --kiosk http://localhost:8888/ --window-position=0,0 &
+
+# Allow Firefox to initialize 
+sleep 5
 
 # Start the oscilloscope visualization
-# cd /home/wave/W-AV
-# ./run-viz.sh &
+cd /home/wave/W-AV/OscViz
+./env/bin/python3 oscVizQt5.py &
 
 # Wait for all processes
 wait

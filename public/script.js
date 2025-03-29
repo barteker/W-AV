@@ -69,6 +69,8 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                     document.getElementById('prevBtn').disabled = false;
                     document.getElementById('playPauseBtn').disabled = false;
                     document.getElementById('nextBtn').disabled = false;
+
+                    initializePlayerState();
                 }
             })
             .catch(error => {
@@ -563,4 +565,44 @@ function startProgressTracking() {
     }, 1000);
 }
 
+// Add this function to script.js to handle the initialization sequence
+function initializePlayerState() {
+    console.log('Initializing player state with simulated clicks...');
+    
+    // First, simulate a play button click
+    return new Promise(resolve => {
+        console.log('Simulating initial play click');
+        document.getElementById('playPauseBtn').click();
+        
+        // Wait for the click to process
+        setTimeout(() => {
+            console.log('Waiting for play action to complete...');
+            // Wait another second before pausing
+            setTimeout(() => {
+                console.log('Simulating pause click');
+                // Simulate a second click to pause
+                document.getElementById('playPauseBtn').click();
+                
+                // Allow time for pause to complete
+                setTimeout(() => {
+                    console.log('Player fully initialized and ready for GPIO control');
+                    resolve();
+                }, 500);
+            }, 1000);
+        }, 500);
+    });
+}
 
+// Add this to bottom of script.js
+socket.on('simulate-click', function(data) {
+    console.log('Simulating click on button:', data.button);
+    
+    // Simulate the appropriate button click
+    if (data.button === 'play') {
+        document.getElementById('playPauseBtn').click();
+    } else if (data.button === 'next') {
+        document.getElementById('nextBtn').click();
+    } else if (data.button === 'prev') {
+        document.getElementById('prevBtn').click();
+    }
+});

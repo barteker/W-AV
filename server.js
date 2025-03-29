@@ -441,6 +441,15 @@ app.post('/ui-update', (req, res) => {
     }
 });
 
+// Add this new endpoint to simulate UI clicks
+app.post('/simulate-click', (req, res) => {
+    const { button } = req.body; // 'play', 'next', 'prev'
+    
+    // Broadcast a click simulation event to all connected clients
+    io.emit('simulate-click', { button });
+    res.json({ success: true });
+});
+
 // Add error handler
 app.use((error, req, res, next) => {
     console.error('Error:', error);
