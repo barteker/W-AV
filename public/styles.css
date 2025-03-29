@@ -1,14 +1,15 @@
 body {
+    margin: 0;
+    padding: 0;
     background-color: #050505;
     color: aliceblue;
+    font-family: 'ClashGrotesk', sans-serif;
+    overflow: hidden; /* Prevent body scrolling */
 
     @font-face {
         font-family: ClashGrotesk;
         src: url("ClashGrotesk-Variable.ttf");
     }
-
-    font-family: 'ClashGrotesk',
-    sans-serif;
 }
 
 .controls {
@@ -22,9 +23,11 @@ button {
 }
 
 #status {
-    padding: 10px;
-    margin: 10px;
+    padding: 5px 10px;
+    margin: 0;
     color: #c4c4c4;
+    height: 30px; /* Fixed height */
+    box-sizing: border-box;
 }
 
 .error {
@@ -32,9 +35,9 @@ button {
 }
 
 .library {
-    margin: 20px;
+    margin: 0px;
     padding: 10px;
-    max-height: 80vh; /* Limit height so users can see there's more content */
+    max-height: 100%;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -46,7 +49,7 @@ button {
     margin-bottom: 15px;
     padding: 5px;
     border-bottom: 2px solid #333;
-    background-color: #050505; /* Match your page background */
+    background-color: #050505;
     z-index: 10;
 }
 
@@ -96,18 +99,19 @@ button {
 
 .pagination-controls {
     text-align: center;
-    margin: 10px 0;
-    padding: 10px 0;
+    margin: 15px 0;
+    padding: 5px 0;
     display: flex;
     justify-content: center;
     gap: 10px;
+    border-top: 2px solid #333;
 }
 
 .page-btn {
-    background: #282828;
+    background: #525252;
     color: white;
     border: none;
-    padding: 8px 16px;
+    padding: 10px 20px;
     cursor: pointer;
 }
 
@@ -162,5 +166,138 @@ button {
     overflow-y: auto;
     border-top: 1px solid #333;
     border-bottom: 1px solid #333;
-    padding-bottom: 20px;
+    padding-bottom: 15px;
+}
+
+/* Split layout */
+.app-container {
+    display: flex;
+    width: 100%;
+    height: calc(100vh - 30px); /* Account for status bar exactly */
+    overflow: hidden;
+    position: relative; /* Make positioned absolutely to body */
+    top: 0;
+    left: 0;
+}
+
+.status-hidden .app-container {
+    height: 100vh; /* Full viewport height when status is gone */
+    top: 0;
+}
+
+.library-container {
+    width: 50%;
+    height: 100%;
+    overflow-y: auto;
+    border-right: 2px solid #333;
+    padding-right: 10px;
+}
+
+.now-playing-container {
+    width: 50%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+    box-sizing: border-box;
+    overflow: hidden; /* Prevent scrolling */
+}
+
+.now-playing-content {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 20px;
+    max-height: 100%; /* Prevent content from overflowing */
+    overflow: hidden;
+}
+
+.album-art-container {
+    width: 400px;  /* Increased from 350px to 400px */
+    height: 400px; /* Increased from 350px to 400px */
+    margin-bottom: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+#nowPlayingArt {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.track-info {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 10px; /* Reduce margin to prevent overflow */
+}
+
+#nowPlayingTrack {
+    font-size: 1.5em;
+    font-weight: bold;
+    margin-bottom: 5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.artist-name {
+    font-size: 1.2em;
+    color: #b3b3b3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.progress-container {
+    width: 90%;
+    margin-top: 10px;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 6px;
+    background-color: #333;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 5px;
+}
+
+#progressFill {
+    height: 100%;
+    background-color: #1db954;
+    width: 0%;
+    transition: width 1s linear;
+}
+
+.time-display {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8em;
+    color: #b3b3b3;
+}
+
+/* Responsive adjustments for 1024x600 */
+@media (max-width: 1024px) {
+    .album-art-container {
+        width: 350px;
+        height: 350px;
+        margin-bottom: 10px; /* Reduce margin to prevent overflow */
+    }
+    
+    #nowPlayingTrack {
+        font-size: 1.2em;
+    }
+    
+    .artist-name {
+        font-size: 1em;
+    }
+    
+    .track-info {
+        margin-bottom: 10px; /* Reduce margin to prevent overflow */
+    }
 }

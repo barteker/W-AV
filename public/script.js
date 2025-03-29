@@ -59,7 +59,13 @@ window.onSpotifyWebPlaybackSDKReady = () => {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    statusEl.textContent = 'Device registered successfully';
+                    // Hide the status element completely once device is registered
+                    statusEl.style.display = 'none';
+                    
+                    // Add class to body to adjust layout
+                    document.body.classList.add('status-hidden');
+                    
+                    // Enable control buttons
                     document.getElementById('prevBtn').disabled = false;
                     document.getElementById('playPauseBtn').disabled = false;
                     document.getElementById('nextBtn').disabled = false;
@@ -110,16 +116,24 @@ window.onSpotifyWebPlaybackSDKReady = () => {
                 isPlaying: !state.paused,
                 currentUri: state.context ? state.context.uri : 
                            (state.track_window.current_track ? state.track_window.current_track.uri : null),
-                deviceReady: true
+                deviceReady: true,
+                trackProgress: state.position,
+                trackDuration: state.duration
             };
             
-            // Update UI
-            document.getElementById('nowPlaying').textContent = 
-                `Now Playing: ${state.track_window.current_track.name}`;
+            // Update Now Playing UI
+            updateNowPlayingUI(state);
+            
+            // Update play/pause button
             document.getElementById('playPauseBtn').textContent = 
                 state.paused ? 'Play' : 'Pause';
                 
             console.log('Playback state updated:', window.playerState);
+            
+            // Start progress tracking if playing
+            if (!state.paused) {
+                startProgressTracking();
+            }
         }
     });
 
@@ -255,7 +269,9 @@ function loadLibraryContent(tab, offset = 0) {
 // 1. First, create a unified play function to be used by both UI clicks and rotary encoder
 function playUri(uri) {
     // Update UI immediately for responsive feel
-    document.getElementById('nowPlaying').textContent = 'Loading...';
+    document.getElementById('nowPlayingTrack').textContent = 'Loading...';
+    document.getElementById('nowPlayingArtist').textContent = '';
+    document.getElementById('progressFill').style.width = '0%';
     
     return fetch('/play-context', {
         method: 'POST',
@@ -270,7 +286,6 @@ function playUri(uri) {
         console.log('Play response:', data);
         return data;
     });
-    // Remove the setTimeout completely
 }
 
 // 2. Update the library-item click handler in renderLibraryItems() to use this function
@@ -480,5 +495,72 @@ socket.on('ui-update', function (data) {
         }
     }
 });
+
+// Add these new functions
+
+function formatTime(ms) {
+    const minutes = Math.floor(ms / 60000);
+    const seconds = Math.floor((ms % 60000) / 1000);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
+function updateNowPlayingUI(state) {
+    const track = state.track_window.current_track;
+    if (!track) return;
+    
+    // Update track info
+    document.getElementById('nowPlayingTrack').textContent = track.name;
+    document.getElementById('nowPlayingArtist').textContent = track.artists.map(a => a.name).join(', ');
+    
+    // Update album art
+    if (track.album && track.album.images && track.album.images.length > 0) {
+        document.getElementById('nowPlayingArt').src = track.album.images[0].url;
+    } else {
+        document.getElementById('nowPlayingArt').src = 'default-cover.png';
+    }
+    
+    // Update times
+    document.getElementById('currentTime').textContent = formatTime(state.position);
+    document.getElementById('totalTime').textContent = formatTime(state.duration);
+    
+    // Update progress bar
+    const progressPercent = (state.position / state.duration) * 100;
+    document.getElementById('progressFill').style.width = `${progressPercent}%`;
+}
+
+// Tracking playback progress
+let progressInterval;
+
+function startProgressTracking() {
+    // Clear any existing interval
+    if (progressInterval) {
+        clearInterval(progressInterval);
+    }
+    
+    // Start a new interval that updates every second
+    let lastKnownPosition = window.playerState.trackProgress;
+    const startTime = Date.now();
+    
+    progressInterval = setInterval(() => {
+        if (!window.playerState.isPlaying) {
+            clearInterval(progressInterval);
+            return;
+        }
+        
+        // Calculate current position based on elapsed time
+        const elapsed = Date.now() - startTime;
+        const estimatedPosition = lastKnownPosition + elapsed;
+        
+        if (estimatedPosition >= window.playerState.trackDuration) {
+            clearInterval(progressInterval);
+            return;
+        }
+        
+        // Update UI
+        document.getElementById('currentTime').textContent = formatTime(estimatedPosition);
+        const progressPercent = (estimatedPosition / window.playerState.trackDuration) * 100;
+        document.getElementById('progressFill').style.width = `${progressPercent}%`;
+    }, 1000);
+}
 
 

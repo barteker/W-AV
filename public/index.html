@@ -9,31 +9,59 @@
         window.playerState = {
             isPlaying: false,
             currentUri: null,
-            deviceReady: false
+            deviceReady: false,
+            trackProgress: 0,
+            trackDuration: 0
         };
     </script>
 </head>
 <body>
     <div id="status">Checking token...</div>
-    <div class="controls">
-        <button id="prevBtn" disabled>Previous</button>
-        <button id="playPauseBtn" disabled>Play/Pause</button>
-        <button id="nextBtn" disabled>Next</button>
-        <button id="logoutBtn">Logout</button>
-    </div>
-    <div class="library">
-        <div class="tabs">
-            <button class="tab-btn active" data-tab="playlists">Playlists</button>
-            <button class="tab-btn" data-tab="albums">Albums</button>
-            <button class="tab-btn" data-tab="songs">Liked Songs</button>
+    <div class="app-container">
+        <!-- LEFT SIDE - Library -->
+        <div class="library-container">
+            <div class="library">
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="playlists">Playlists</button>
+                    <button class="tab-btn" data-tab="albums">Albums</button>
+                    <button class="tab-btn" data-tab="songs">Liked Songs</button>
+                </div>
+                <div id="library-content"></div>
+                <div class="pagination-controls">
+                    <button id="prevPage" class="page-btn" tabindex="0" style="display: none;">↑ Previous Page</button>
+                    <button id="nextPage" class="page-btn" tabindex="0">↓ Next Page</button>
+                </div>
+            </div>
+            <div class="controls">
+                <button id="prevBtn" disabled>Previous</button>
+                <button id="playPauseBtn" disabled>Play/Pause</button>
+                <button id="nextBtn" disabled>Next</button>
+                <button id="logoutBtn">Logout</button>
+            </div>
         </div>
-        <div id="library-content"></div>
-        <div class="pagination-controls">
-            <button id="prevPage" class="page-btn" tabindex="0" style="display: none;">↑ Previous Page</button>
-            <button id="nextPage" class="page-btn" tabindex="0">↓ Next Page</button>
+
+        <!-- RIGHT SIDE - Now Playing -->
+        <div class="now-playing-container">
+            <div class="now-playing-content">
+                <div class="album-art-container">
+                    <img id="nowPlayingArt" src="default-cover.png" alt="Album Cover">
+                </div>
+                <div class="track-info">
+                    <div id="nowPlayingTrack">Not Playing</div>
+                    <div id="nowPlayingArtist" class="artist-name">-</div>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div id="progressFill"></div>
+                    </div>
+                    <div class="time-display">
+                        <span id="currentTime">0:00</span>
+                        <span id="totalTime">0:00</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-    <div id="nowPlaying"></div>
 
     <script src="https://sdk.scdn.co/spotify-player.js"></script>
     <script src="script.js"></script>
