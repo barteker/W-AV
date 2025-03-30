@@ -6,7 +6,10 @@ export DISPLAY=:0
 export XAUTHORITY=/home/wave/.Xauthority
 
 # Wait for X server
-sleep 5
+sleep 10
+
+# Rotate the second screen 90 degrees clockwise
+xrandr --output HDMI-2 --rotate right
 
 # Start Node.js server if not already running
 if ! pgrep -f "node.*server.js" > /dev/null; then

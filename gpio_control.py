@@ -13,7 +13,7 @@ logging.basicConfig(
 
 # GPIO Setup
 PLAY_BTN = 7
-STOP_BTN = 8
+STOP_BTN = 6
 NEXT_BTN = 16    # Add next track button
 PREV_BTN = 12    # Add previous track button
 

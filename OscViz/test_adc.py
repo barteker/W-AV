@@ -2,7 +2,7 @@ from gpiozero import MCP3008
 from time import sleep
 
 # Create an object called pot that refers to MCP3008 channel 0
-pot = MCP3008(0)
+pot = MCP3008(channel=0)
 
 # Counter for tracking readings
 reading_count = 0

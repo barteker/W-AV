@@ -2,13 +2,19 @@
 import time
 import numpy as np
 import pulsectl
-import spidev
 import threading
 import scipy.signal as signal
 import os
 import logging
 import traceback
 from logging.handlers import RotatingFileHandler
+
+# Add Adafruit CircuitPython imports to replace spidev
+import board
+import busio
+import digitalio
+from adafruit_mcp3xxx.analog_in import AnalogIn
+from adafruit_mcp3xxx.mcp3008 import MCP3008
 
 # Configure logging
 log_handler = RotatingFileHandler(
@@ -31,8 +37,6 @@ CHANNELS = 2
 FORMAT = 'float32'  # Changed to match PulseAudio
 
 # MCP3008 configuration
-SPI_BUS = 0
-SPI_DEVICE = 0
 ADC_CHANNELS = 8  # 7 for EQ bands + 1 for volume
 
 # EQ bands center frequencies (Hz)
@@ -42,15 +46,51 @@ Q_FACTOR = 1.414  # Standard Q factor for audio EQ
 def setup_pulseaudio_eq():
     """Set up PulseAudio EQ system"""
     try:
-        # Create virtual sinks
-        os.system('pactl load-module module-null-sink sink_name=pre_eq sink_properties=device.description="Pre-EQ Input"')
-        os.system('pactl load-module module-null-sink sink_name=post_eq sink_properties=device.description="Post-EQ Output"')
+        # Create virtual sinks with return code checking
+        pre_eq_result = os.system('pactl load-module module-null-sink sink_name=pre_eq sink_properties=device.description="Pre-EQ Input"')
+        if pre_eq_result != 0:
+            logger.error(f"Failed to create pre_eq sink, return code: {pre_eq_result}")
+            return False
+            
+        post_eq_result = os.system('pactl load-module module-null-sink sink_name=post_eq sink_properties=device.description="Post-EQ Output"')
+        if post_eq_result != 0:
+            logger.error(f"Failed to create post_eq sink, return code: {post_eq_result}")
+            return False
+        
+        # Give PulseAudio time to create the sinks
+        time.sleep(1)
         
         # Create EQ sink
-        os.system('pactl load-module module-ladspa-sink sink_name=eq_sink master=post_eq plugin=mbeq_1197 label=mbeq control="0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0"')
+        eq_result = os.system('pactl load-module module-ladspa-sink sink_name=eq_sink master=post_eq plugin=mbeq_1197 label=mbeq control="0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0"')
+        if eq_result != 0:
+            logger.error(f"Failed to create EQ sink, return code: {eq_result}")
+            # Check if LADSPA plugin is installed
+            os.system('ls -la /usr/lib/ladspa/')
+            return False
+            
+        # Give PulseAudio time to create the sink
+        time.sleep(1)
         
         # Connect them with loopback
-        os.system('pactl load-module module-loopback source=pre_eq.monitor sink=eq_sink latency_msec=10')
+        loopback_result = os.system('pactl load-module module-loopback source=pre_eq.monitor sink=eq_sink latency_msec=10')
+        if loopback_result != 0:
+            logger.error(f"Failed to create loopback, return code: {loopback_result}")
+            return False
+        
+        # Verify sinks exist before returning success
+        with pulsectl.Pulse('eq-setup-verification') as pulse:
+            sources = [s.name for s in pulse.source_list()]
+            sinks = [s.name for s in pulse.sink_list()]
+            
+            if 'pre_eq.monitor' not in sources:
+                logger.error("pre_eq.monitor source was not created")
+                return False
+                
+            if 'post_eq' not in sinks:
+                logger.error("post_eq sink was not created")
+                return False
+                
+            logger.info(f"Verified PulseAudio sinks and sources: {sinks}, {sources}")
         
         # Set default sink
         os.system('pactl set-default-sink pre_eq')
@@ -63,10 +103,27 @@ def setup_pulseaudio_eq():
 
 class AudioEQ:
     def __init__(self):
-        # Initialize SPI for MCP3008
-        self.spi = spidev.SpiDev()
-        self.spi.open(SPI_BUS, SPI_DEVICE)
-        self.spi.max_speed_hz = 1000000  # 1MHz
+        # Initialize Adafruit MCP3008 - replaces SPI setup
+        try:
+            # Create the SPI bus
+            self.spi = busio.SPI(clock=board.SCK, MISO=board.MISO, MOSI=board.MOSI)
+            
+            # Create the CS (chip select)
+            self.cs = digitalio.DigitalInOut(board.CE0)
+            
+            # Create the MCP object
+            self.mcp = MCP3008(self.spi, self.cs)
+            
+            # Create analog input channels on the MCP3008
+            self.adc_channels = []
+            for i in range(ADC_CHANNELS):
+                self.adc_channels.append(AnalogIn(self.mcp, i))
+            
+            logger.info("MCP3008 initialized using Adafruit CircuitPython library")
+        except Exception as e:
+            logger.error(f"Failed to initialize MCP3008: {e}")
+            logger.error(traceback.format_exc())
+            raise
         
         # Thread synchronization
         self.lock = threading.Lock()
@@ -123,26 +180,21 @@ class AudioEQ:
         logger.debug(f"Updated EQ band {index} (center: {freq}Hz) gain to {gain_db}dB")
     
     def read_adc(self, channel):
-        """Read from MCP3008 ADC channel (0-7)"""
-        if 0 <= channel <= 7:
+        """Read from MCP3008 ADC channel (0-7) using Adafruit library"""
+        if 0 <= channel < len(self.adc_channels):
             try:
-                # Correct command format for MCP3008
-                # Start bit (1), followed by single-ended mode (1), then channel bits
-                cmd = [0x01, (0x08 + channel) << 4, 0]
-                r = self.spi.xfer2(cmd)
+                # Get raw value from the Adafruit library
+                raw_value = self.adc_channels[channel].value
                 
-                # Debug the raw response
-                logger.debug(f"Raw SPI response channel {channel}: {r}")
+                # Scale from 16-bit value (0-65535) to 10-bit value (0-1023)
+                scaled_value = int(raw_value * 1023 / 65535)
                 
-                # Correct bit extraction from response
-                data = ((r[1] & 0x03) << 8) + r[2]
+                # Debug logging
+                logger.debug(f"Channel {channel} raw: {raw_value}, scaled: {scaled_value}, voltage: {self.adc_channels[channel].voltage:.2f}V")
                 
-                # Additional debug for calculation
-                logger.debug(f"Channel {channel} calculation: {r[1]}&0x03={r[1]&0x03}, shifted={(r[1]&0x03)<<8}, r[2]={r[2]}, result={data}")
-                
-                return data
+                return scaled_value
             except Exception as e:
-                logger.error(f"SPI read error on channel {channel}: {e}")
+                logger.error(f"ADC read error on channel {channel}: {e}")
                 return 0
         return 0
     
@@ -371,10 +423,7 @@ class AudioEQ:
         if hasattr(self, 'control_thread') and self.control_thread.is_alive():
             self.control_thread.join(timeout=1.0)
         
-        # Close SPI
-        if hasattr(self, 'spi'):
-            self.spi.close()
-            
+        # No need to close SPI specifically with Adafruit library
         logger.info("Audio EQ system stopped")
 
 # Run as standalone or import as module
@@ -382,14 +431,17 @@ if __name__ == "__main__":
     try:
         logger.info("Starting AudioEQ application")
         
-        # Check if SPI device is accessible
+        # Check if MCP3008 ADC is accessible
         try:
-            spi_test = spidev.SpiDev()
-            spi_test.open(SPI_BUS, SPI_DEVICE)
-            spi_test.close()
-            logger.info("SPI device is accessible")
+            # Test ADC accessibility with Adafruit library
+            spi = busio.SPI(clock=board.SCK, MISO=board.MISO, MOSI=board.MOSI)
+            cs = digitalio.DigitalInOut(board.CE0)
+            mcp = MCP3008(spi, cs)
+            test_channel = AnalogIn(mcp, 0)
+            logger.info(f"MCP3008 is accessible, channel 0 value: {test_channel.value}, voltage: {test_channel.voltage:.2f}V")
+            # No need to explicitly close
         except Exception as e:
-            logger.error(f"SPI device access error: {e}")
+            logger.error(f"MCP3008 access error: {e}")
             logger.error(traceback.format_exc())
         
         # Check if PulseAudio is available

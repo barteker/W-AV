@@ -34,6 +34,10 @@ processes_to_manage = [
     "firefox --kiosk"              # Web interface
 ]
 
+# Instead of the complex user detection, use direct values:
+x_user = "wave"
+x_authority = "/home/wave/.Xauthority"
+
 def setup():
     """Initialize GPIO pins"""
     GPIO.setmode(GPIO.BCM)
@@ -70,6 +74,10 @@ def find_process_ids(process_pattern):
 def suspend_processes():
     """Suspend power-intensive processes"""
     logging.info("Suspending processes...")
+    
+    # Add X-related environment variables when checking for processes
+    os.environ['DISPLAY'] = ':0'
+    os.environ['XAUTHORITY'] = x_authority
     
     # Save PIDs to a file for reliable resumption
     pid_file = "/tmp/wave_suspended_pids.txt"
@@ -137,73 +145,43 @@ def resume_processes():
 
 def turn_off_display():
     """Turn off HDMI display to save power"""
-    logging.info("Turning off HDMI display")
+    logging.info("Turning off HDMI displays using xrandr")
     
     try:
-        # Use vcgencmd as primary method (confirmed available)
-        subprocess.run("/usr/bin/vcgencmd display_power 0", shell=True)
+        # Setup environment for X commands
+        os.environ['DISPLAY'] = ':0'
+        os.environ['XAUTHORITY'] = x_authority
         
-        # Target the correct card1 DRM controls for your system
-        try:
-            subprocess.run("sudo sh -c 'echo off > /sys/class/drm/card1-HDMI-A-1/status'", shell=True)
-            subprocess.run("sudo sh -c 'echo off > /sys/class/drm/card1-HDMI-A-2/status'", shell=True)
-        except Exception as e:
-            logging.error(f"DRM control error: {e}")
-            
-        # Framebuffer blanking
-        subprocess.run("sudo sh -c 'echo 1 > /sys/class/graphics/fb0/blank'", shell=True)
+        # Get current display configuration to restore later
+        display_info = subprocess.run("xrandr --verbose", shell=True, capture_output=True, text=True).stdout
+        with open("/tmp/display_state.txt", "w") as f:
+            f.write(display_info)
         
-        # Switch to a text console but don't kill X
-        subprocess.run("sudo chvt 1", shell=True)
+        # Use xrandr to turn off displays - this works with minimal X
+        subprocess.run("xrandr --output HDMI-1 --off", shell=True, check=False)
+        subprocess.run("xrandr --output HDMI-2 --off", shell=True, check=False)
         
-        # Use DPMS with proper user context from the service file
-        try:
-            # Find the actual user running X
-            user_cmd = "who | grep '(:0)' | awk '{print $1}'"
-            x_user = subprocess.check_output(user_cmd, shell=True, text=True).strip()
-            if not x_user:
-                x_user = "wave"  # Default to 'wave' if detection fails
-                
-            # Use that user's authority to set DPMS
-            subprocess.run(f"sudo -u {x_user} DISPLAY=:0 XAUTHORITY=/home/{x_user}/.Xauthority xset dpms force off", shell=True)
-        except Exception as e:
-            logging.error(f"DPMS control error: {e}")
+        
+        logging.info("Display turn-off commands completed")
     except Exception as e:
         logging.error(f"Error turning off display: {e}")
 
 def turn_on_display():
     """Turn on HDMI display"""
-    logging.info("Turning on HDMI display")
+    logging.info("Turning on HDMI displays using xrandr")
     
     try:
-        # Re-enable DRM outputs
-        try:
-            subprocess.run("sudo sh -c 'echo on > /sys/class/drm/card1-HDMI-A-1/status'", shell=True)
-            subprocess.run("sudo sh -c 'echo on > /sys/class/drm/card1-HDMI-A-2/status'", shell=True)
-        except:
-            pass
-            
-        # Unblank framebuffer
-        subprocess.run("sudo sh -c 'echo 0 > /sys/class/graphics/fb0/blank'", shell=True)
+        # Setup environment for X commands
+        os.environ['DISPLAY'] = ':0'
+        os.environ['XAUTHORITY'] = x_authority
         
-        # Use vcgencmd to power on HDMI
-        subprocess.run("/usr/bin/vcgencmd display_power 1", shell=True)
+        # Turn main display back on
+        subprocess.run("xrandr --output HDMI-1 --auto", shell=True, check=False)
         
-        # Switch back to GUI console
-        subprocess.run("sudo chvt 7", shell=True)
+        # Turn second display on with rotation
+        subprocess.run("xrandr --output HDMI-2 --auto --rotate right", shell=True, check=False)
         
-        # Reset DPMS
-        try:
-            # Use the same user detection approach
-            user_cmd = "who | grep '(:0)' | awk '{print $1}'"
-            x_user = subprocess.check_output(user_cmd, shell=True, text=True).strip()
-            if not x_user:
-                x_user = "wave"  # Default to 'wave' if detection fails
-                
-            # Turn DPMS back on
-            subprocess.run(f"sudo -u {x_user} DISPLAY=:0 XAUTHORITY=/home/{x_user}/.Xauthority xset dpms force on", shell=True)
-        except Exception as e:
-            logging.error(f"DPMS reset error: {e}")
+        logging.info("Display turn-on commands completed")
     except Exception as e:
         logging.error(f"Error turning on display: {e}")
 
