@@ -1,8 +1,8 @@
 import sys
 import pyaudio
 import numpy as np
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QComboBox, QPushButton, QHBoxLayout
-from PyQt5.QtCore import QThread, pyqtSignal
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
+from PyQt5.QtCore import QThread, pyqtSignal, Qt
 import pyqtgraph as pg
 
 class AudioStreamThread(QThread):
@@ -44,31 +44,24 @@ class AudioStreamThread(QThread):
 class MicrophoneOscilloscope(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Bruh")
-        self.setGeometry(100, 100, 900, 500)
-
+        # Remove window borders
+        self.setWindowFlags(Qt.FramelessWindowHint)
+        self.setAttribute(Qt.WA_TranslucentBackground)
+        
         self.p = pyaudio.PyAudio()
         self.device_index = None
         self.audio_thread = None
 
         self.initUI()
+        # Auto-connect to pulse device
+        self.find_and_connect_pulse()
 
     def initUI(self):
         main_widget = QWidget()
         self.setCentralWidget(main_widget)
         layout = QVBoxLayout()
-
-        device_layout = QHBoxLayout()
-        self.device_selector = QComboBox()
-        self.devices = self.get_audio_devices()
-        self.device_selector.addItems(self.devices['names'])
-        device_layout.addWidget(self.device_selector)
-
-        self.connect_button = QPushButton("Connect")
-        self.connect_button.clicked.connect(self.connect_device)
-        device_layout.addWidget(self.connect_button)
-
-        layout.addLayout(device_layout)
+        # Remove margins to use full space
+        layout.setContentsMargins(0, 0, 0, 0)
 
         self.plot_widget = pg.PlotWidget()
         self.plot_widget.setBackground("black")
@@ -80,17 +73,6 @@ class MicrophoneOscilloscope(QMainWindow):
         self.signal_curve = self.plot_widget.plot(pen=pg.mkPen(color="lime", width=1))
         layout.addWidget(self.plot_widget)
 
-        control_layout = QHBoxLayout()
-
-        self.pause_button = QPushButton("Pause")
-        self.pause_button.clicked.connect(self.toggle_pause)
-        control_layout.addWidget(self.pause_button)
-
-        self.exit_button = QPushButton("Exit")
-        self.exit_button.clicked.connect(self.close_app)
-        control_layout.addWidget(self.exit_button)
-
-        layout.addLayout(control_layout)
         main_widget.setLayout(layout)
 
     def get_audio_devices(self):
@@ -103,32 +85,49 @@ class MicrophoneOscilloscope(QMainWindow):
                 name = dev_info['name']
                 devices.append(name)
                 info[name] = i
+                # Print available devices for debugging
+                print(f"Device {i}: {name}")
 
         return {'names': devices, 'indices': info}
 
-    def connect_device(self):
+    def find_and_connect_pulse(self):
+        devices = self.get_audio_devices()
+        
+        # Look for pulse device
+        pulse_index = None
+        for name, idx in devices['indices'].items():
+            if 'pulse' in name.lower() or 'iqaudio' in name.lower():
+                pulse_index = idx
+                print(f"Found pulse audio device: {name}")
+                break
+        
+        # If no pulse device found, use first available device
+        if pulse_index is None and devices['names']:
+            pulse_index = devices['indices'][devices['names'][0]]
+            print(f"No pulse device found, using: {devices['names'][0]}")
+        
+        if pulse_index is not None:
+            self.device_index = pulse_index
+            self.connect_to_device(self.device_index)
+        else:
+            print("No audio input devices found!")
+
+    def connect_to_device(self, device_index):
         if self.audio_thread:
             self.audio_thread.stop()
-
-        device_name = self.device_selector.currentText()
-        self.device_index = self.devices['indices'].get(device_name)
-
-        if self.device_index is not None:
-            self.audio_thread = AudioStreamThread(device_index=self.device_index)
-            self.audio_thread.data_signal.connect(self.update_plot)
-            self.audio_thread.start()
+            
+        self.audio_thread = AudioStreamThread(device_index=device_index)
+        self.audio_thread.data_signal.connect(self.update_plot)
+        self.audio_thread.start()
 
     def update_plot(self, audio_data):
         self.signal_curve.setData(audio_data)
 
-    def toggle_pause(self):
-        if self.audio_thread and self.audio_thread.isRunning():
-            self.audio_thread.stop()
-            self.audio_thread = None
-            self.pause_button.setText("Resume")
-        else:
-            self.connect_device()
-            self.pause_button.setText("Pause")
+    def keyPressEvent(self, event):
+        # Close on ESC key
+        if event.key() == Qt.Key_Escape:
+            self.close_app()
+        super().keyPressEvent(event)
 
     def close_app(self):
         if self.audio_thread:
@@ -139,7 +138,7 @@ class MicrophoneOscilloscope(QMainWindow):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MicrophoneOscilloscope()
+    # Position on second display
     window.move(1024, 0)
     window.showFullScreen()
-#     window.show()
     sys.exit(app.exec_())
