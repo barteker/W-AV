@@ -55,6 +55,7 @@ python3 gpio_rotary_control.py &
 echo "Starting oscilloscope visualization..."
 cd /home/wave/W-AV/OscViz
 ./env/bin/python3 oscVizQt5.py &
+./env/bin/python3 VolumeControl.py &
 
 echo "All components started"
 

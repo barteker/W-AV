@@ -177,8 +177,6 @@ def turn_on_display():
         
         # Turn main display back on
         subprocess.run("xrandr --output HDMI-1 --auto", shell=True, check=False)
-        
-        # Turn second display on with rotation
         subprocess.run("xrandr --output HDMI-2 --auto --rotate right", shell=True, check=False)
         
         logging.info("Display turn-on commands completed")
