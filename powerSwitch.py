@@ -11,11 +11,11 @@ from logging.handlers import RotatingFileHandler
 log_handler = RotatingFileHandler(
     '/home/wave/power_switch.log',
     maxBytes=1024*1024,  # 1MB per file
-    backupCount=3        # Keep 3 backup files
+    backupCount=2        # Keep 2 backup files
 )
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.ERROR,  # Only log errors
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[log_handler]
 )

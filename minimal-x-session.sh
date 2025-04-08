@@ -6,7 +6,6 @@ export XAUTHORITY=/home/wave/.Xauthority
 
 # Function to start Openbox
 start_openbox() {
-    echo "Attempting to start Openbox..."
     openbox &
     OPENBOX_PID=$!
     
@@ -15,10 +14,9 @@ start_openbox() {
     
     # Check if openbox started successfully
     if ps -p $OPENBOX_PID > /dev/null; then
-        echo "Openbox started successfully with PID $OPENBOX_PID"
         return 0
     else
-        echo "Failed to start Openbox"
+        echo "Failed to start Openbox" >&2
         return 1
     fi
 }
@@ -33,7 +31,6 @@ while [ $RETRY_COUNT -lt $MAX_RETRIES ] && [ "$OPENBOX_STARTED" = false ]; do
         OPENBOX_STARTED=true
     else
         RETRY_COUNT=$((RETRY_COUNT+1))
-        echo "Retry $RETRY_COUNT of $MAX_RETRIES..."
         sleep 2
     fi
 done
@@ -42,8 +39,7 @@ done
 (
     while true; do
         if ! pgrep -x openbox > /dev/null; then
-            echo "Openbox not running. Restarting..." >&2
-            start_openbox
+            start_openbox >/dev/null 2>&1
         fi
         sleep 10
     done

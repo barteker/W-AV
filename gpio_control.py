@@ -4,11 +4,19 @@ import requests
 import sys
 import logging
 import os
+from logging.handlers import RotatingFileHandler
 
-# Setup logging
+# Setup logging with rotation and error level only
+log_handler = RotatingFileHandler(
+    '/home/wave/gpio_control.log',
+    maxBytes=1024*1024,  # 1MB per file
+    backupCount=2        # Keep only 2 backup files
+)
+
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
+    level=logging.ERROR,  # Only log errors
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[log_handler]
 )
 
 # GPIO Setup
@@ -37,12 +45,6 @@ def setup_gpio():
         GPIO.setup(STOP_BTN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.setup(NEXT_BTN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.setup(PREV_BTN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        
-        logging.info("GPIO setup completed successfully")
-        logging.info(f"Play button (GPIO {PLAY_BTN}) initialized")
-        logging.info(f"Stop button (GPIO {STOP_BTN}) initialized")
-        logging.info(f"Next button (GPIO {NEXT_BTN}) initialized")
-        logging.info(f"Previous button (GPIO {PREV_BTN}) initialized")
         return True
     except Exception as e:
         logging.error(f"GPIO setup failed: {e}")
@@ -52,29 +54,20 @@ def handle_button(channel):
     """Handle button press events"""
     try:
         if channel == PLAY_BTN:
-            logging.info("Play button pressed")
             response = requests.get('http://localhost:8888/player-state')
             if response.status_code == 200:
                 state = response.json()
                 if not state or not state.get('is_playing'):
                     requests.post('http://localhost:8888/play')
-                    logging.info("Starting playback")
-                else:
-                    logging.info("Already playing - ignoring play button")
             
         elif channel == STOP_BTN:
-            logging.info("Stop button pressed")
             response = requests.get('http://localhost:8888/player-state')
             if response.status_code == 200:
                 state = response.json()
                 if state and state.get('is_playing'):
                     requests.post('http://localhost:8888/pause')
-                    logging.info("Pausing playback")
-                else:
-                    logging.info("Already paused - ignoring pause button")
                     
         elif channel == NEXT_BTN:
-            logging.info("Next button pressed")
             # Get current state before skipping
             response = requests.get('http://localhost:8888/player-state')
             was_playing = False
@@ -84,11 +77,8 @@ def handle_button(channel):
             
             # Skip to next track without automatically playing
             requests.post('http://localhost:8888/next')
-            logging.info("Skipped to next track")
-            
             
         elif channel == PREV_BTN:
-            logging.info("Previous button pressed")
             # Get current state before skipping
             response = requests.get('http://localhost:8888/player-state')
             was_playing = False
@@ -98,9 +88,6 @@ def handle_button(channel):
             
             # Skip to previous track without automatically playing
             requests.post('http://localhost:8888/previous')
-            logging.info("Skipped to previous track")
-            
-
             
     except Exception as e:
         logging.error(f"Button press error: {e}")

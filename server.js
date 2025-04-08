@@ -10,6 +10,9 @@ const io = require('socket.io')(server);
 // Add this line to define the port
 const PORT = process.env.PORT || 8888;
 
+// Disable express logging in production
+app.set('env', 'production');
+
 app.use(express.json());
 app.use(express.static('public'));
 

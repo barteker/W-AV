@@ -65,6 +65,26 @@ sudo systemctl enable power-switch.service
 sudo systemctl enable gpio-control.service
 sudo systemctl enable gpio-rotary-control.service
 
+# Setup boot configuration
+echo "Setting up boot configuration..."
+if [ -f "/boot/config.txt" ]; then
+    echo "Backing up existing config.txt..."
+    sudo cp /boot/config.txt /boot/config.txt.backup
+    echo "Copying W-AV config.txt..."
+    sudo cp boot_files/config.txt /boot/config.txt
+else
+    echo "Warning: /boot/config.txt not found. Make sure boot partition is mounted."
+fi
+
+if [ -f "/boot/cmdline.txt" ]; then
+    echo "Backing up existing cmdline.txt..."
+    sudo cp /boot/cmdline.txt /boot/cmdline.txt.backup
+    echo "Copying W-AV cmdline.txt..."
+    sudo cp boot_files/cmdline.txt /boot/cmdline.txt
+else
+    echo "Warning: /boot/cmdline.txt not found. Make sure boot partition is mounted."
+fi
+
 # Setup .bash_profile
 echo "Setting up .bash_profile..."
 cat > ~/.bash_profile << EOL

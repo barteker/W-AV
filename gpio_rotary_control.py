@@ -3,11 +3,19 @@ import time
 import requests
 import logging
 import json
+from logging.handlers import RotatingFileHandler
 
-# Setup logging
+# Setup logging with rotation and error level only
+log_handler = RotatingFileHandler(
+    '/home/wave/rotary_control.log',
+    maxBytes=1024*1024,  # 1MB per file
+    backupCount=2        # Keep only 2 backup files
+)
+
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
+    level=logging.ERROR,  # Only log errors
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[log_handler]
 )
 
 # GPIO Pin Configuration
@@ -62,7 +70,6 @@ def update_current_items():
     global items
     try:
         items = fetch_tab_data(tabs[current_tab])
-        logging.info(f"Loaded {len(items)} items for tab {tabs[current_tab]}")
     except Exception as e:
         logging.error(f"Error updating items: {e}")
         items = []
@@ -76,8 +83,6 @@ def setup_gpio():
         GPIO.setup(ENCODER_A, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.setup(ENCODER_B, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.setup(SELECT_BTN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        
-        logging.info("GPIO setup completed")
         return True
     except Exception as e:
         logging.error(f"GPIO setup failed: {e}")
@@ -127,7 +132,6 @@ def handle_selection():
     """Handle selection button press"""
     try:
         update_interface(trigger_click=True)
-        logging.info("Selection triggered for current focused element")
     except Exception as e:
         logging.error(f"Selection error: {e}")
 
@@ -152,14 +156,12 @@ def main():
             if rotation != 0:
                 focus_direction = 'next' if rotation > 0 else 'previous'
                 update_interface(focus_change=focus_direction)
-                logging.info(f"Focus change: {focus_direction}")
                 
             # Handle button press
             if GPIO.input(SELECT_BTN) == GPIO.LOW:
                 time.sleep(0.02)  # Debounce
                 if GPIO.input(SELECT_BTN) == GPIO.LOW:
                     update_interface(trigger_click=True)
-                    logging.info("Button clicked")
                     
                     # Implement cooldown period after button press
                     cooldown_time = 0.2  # 200ms cooldown
@@ -168,7 +170,7 @@ def main():
             time.sleep(0.001)  # Small delay for CPU efficiency
             
     except KeyboardInterrupt:
-        logging.info("Shutting down...")
+        pass
     except Exception as e:
         logging.error(f"Unexpected error: {e}")
     finally:
