@@ -175,9 +175,16 @@ def turn_on_display():
         os.environ['DISPLAY'] = ':0'
         os.environ['XAUTHORITY'] = x_authority
         
-        # Turn main display back on
-        subprocess.run("xrandr --output HDMI-1 --auto", shell=True, check=False)
-        subprocess.run("xrandr --output HDMI-2 --auto --rotate right", shell=True, check=False)
+        # Get the primary display resolution
+        primary_res = subprocess.run("xrandr | grep HDMI-1 -A1 | tail -n1 | awk '{print $1}'", 
+                                   shell=True, capture_output=True, text=True).stdout.strip()
+        
+        # Configure displays side by side
+        # HDMI-1 as primary display
+        subprocess.run("xrandr --output HDMI-1 --mode " + primary_res + " --pos 0x0", shell=True, check=False)
+        # HDMI-2 rotated right and positioned to the right of HDMI-1
+        subprocess.run("xrandr --output HDMI-2 --mode " + primary_res + " --rotate right --pos " + primary_res.split('x')[0] + "x0", 
+                      shell=True, check=False)
         
         logging.info("Display turn-on commands completed")
     except Exception as e:
