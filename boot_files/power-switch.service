@@ -1,0 +1,16 @@
+[Unit]
+Description=GPIO Power Switch Monitor
+After=multi-user.target
+Wants=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /home/wave/W-AV/powerSwitch.py
+WorkingDirectory=/home/wave/W-AV
+RestartSec=5
+User=root
+# Add dependencies on your other services if applicable
+# After=w-av-server.service
+
+[Install]
+WantedBy=multi-user.target

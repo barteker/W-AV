@@ -1,0 +1,500 @@
+sudo -u pi DISPLAY=:0 python3 powerSwitch.py
+sudo -u wave DISPLAY=:0 python3 powerSwitch.py
+sudo -u wave DISPLAY=:0 python3 W-AV/powerSwitch.py
+deactivate
+sudo systemctl daemon-reload
+sudo systemctl restart power-switch.service
+sudo journalctl -fu power-switch.service
+which tvservice vcgencmd
+sudo systemctl daemon-reload
+sudo systemctl restart power-switch.service
+sudo journalctl -fu power-switch.service
+sudo systemctl daemon-reload
+sudo systemctl restart power-switch.service
+sudo journalctl -fu power-switch.service
+ls -l /sys/class/graphics/fb*/blank
+which vbetool
+ls -l /sys/class/graphics/fb*/blank
+sudo systemctl daemon-reload
+sudo systemctl restart power-switch.service
+sudo journalctl -fu power-switch.service
+# Check if framebuffer blanking is available
+ls -l /sys/class/graphics/fb*/blank
+# Check for alternative display control methods
+which vbetool
+find / -name tvservice 2>/dev/null
+# Check if you have DRM controls
+ls -l /sys/class/drm/
+# Identify your display manager
+systemctl | grep display
+sudo systemctl daemon-reload
+sudo systemctl restart power-switch.service
+sudo journalctl -fu power-switch.service
+# Find the tvservice binary
+find / -name tvservice 2>/dev/null
+# Check if you have DRM controls
+ls -l /sys/class/drm/
+# Identify your display manager
+systemctl | grep display
+sudo sh -c 'echo off > /sys/class/drm/card1-HDMI-A-1/status'
+sudo sh -c 'echo off > /sys/class/drm/card1-HDMI-A-2/status'
+sudo sh -c 'echo on > /sys/class/drm/card1-HDMI-A-1/status'
+sudo sh -c 'echo on > /sys/class/drm/card1-HDMI-A-2/status'
+sudo sh -c 'echo off > /sys/class/drm/card1-HDMI-A-1/status'
+sudo sh -c 'echo on > /sys/class/drm/card1-HDMI-A-1/status'
+/usr/bin/vcgencmd display_power 0
+/usr/bin/vcgencmd display_power 1
+/usr/bin/vcgencmd display_power
+sudo /usr/bin/vcgencmd display_power 0
+sudo systemctl isolate multi-user.target
+sudo sh -c 'echo off > /sys/class/drm/card1-HDMI-A-1/status'
+sudo sh -c 'echo off > /sys/class/drm/card1-HDMI-A-2/status'
+/usr/bin/vcgencmd display_power 0
+sudo systemctl isolate graphical.target
+sudo sh -c 'echo on > /sys/class/drm/card1-HDMI-A-1/status'
+sudo sh -c 'echo on > /sys/class/drm/card1-HDMI-A-2/status'
+/usr/bin/vcgencmd display_power 1
+sudo systemctl restart oscviz.service
+sudo systemctl --user restart oscviz
+cd W-AV
+systemctl --user restart oscviz
+systemctl --user restart oscviz.service
+sudo -u wave DISPLAY=:0 XAUTHORITY=/home/wave/.Xauthority xset dpms force off
+sudo sh -c 'echo 1 > /sys/class/graphics/fb0/blank'
+sudo sh -c 'echo off > /sys/class/drm/card1-HDMI-A-1/status'
+sudo sh -c 'echo off > /sys/class/drm/card1-HDMI-A-2/status'
+/usr/bin/vcgencmd display_power 0
+sudo chvt 1
+sudo chvt 7
+/usr/bin/vcgencmd display_power 1
+sudo sh -c 'echo 0 > /sys/class/graphics/fb0/blank'
+sudo sh -c 'echo on > /sys/class/drm/card1-HDMI-A-1/status'
+sudo sh -c 'echo on > /sys/class/drm/card1-HDMI-A-2/status'
+sudo -u wave DISPLAY=:0 XAUTHORITY=/home/wave/.Xauthority xset dpms force on
+sudo systemctl daemon-reload
+sudo systemctl restart power-switch.service
+sudo journalctl -fu power-switch.service
+sudo raspi-config nonint do_spi 0
+sudo pip3 install gpiozero
+sudo apt-get install python3-gpiozero
+python3
+sudo python3 test_adc.py
+sudo python3 W-AV/OscViz/test_adc.py
+sudo reboot now
+/usr/bin/python3 /home/wave/.vscode-server/extensions/ms-python.python-2025.2.0/python_files/printEnvVariablesToFile.py /home/wave/.vscode-server/extensions/ms-python.python-2025.2.0/python_files/deactivate/bash/envVars.txt
+cd /etc
+ls
+cd systemd
+cd system
+ls
+rm oscilloscope-viz.service
+sudo rm oscilloscope-viz.service
+ls
+sudo systemctl disable pitunnel.service
+ls
+cd multi-user.target.wants
+ls
+cd
+npm start
+cd W-AV
+npm start
+npm stop
+killall npm
+killall node
+/usr/bin/python3 /home/wave/.vscode-server/extensions/ms-python.python-2025.2.0/python_files/printEnvVariablesToFile.py /home/wave/.vscode-server/extensions/ms-python.python-2025.2.0/python_files/deactivate/bash/envVars.txt
+cd W-AV
+npm start
+sudo shutdown now
+/usr/bin/python3 /home/wave/.vscode-server/extensions/ms-python.python-2025.2.0/python_files/printEnvVariablesToFile.py /home/wave/.vscode-server/extensions/ms-python.python-2025.2.0/python_files/deactivate/bash/envVars.txt
+pkill -f node && node W-AV/server.js
+sudo shutdown now
+sudo systemctl daemon-reload
+sudo systemctl restart gpio-control.service
+sudo reboot now
+/usr/bin/python3 /home/wave/.vscode-server/extensions/ms-python.python-2025.2.0/python_files/printEnvVariablesToFile.py /home/wave/.vscode-server/extensions/ms-python.python-2025.2.0/python_files/deactivate/bash/envVars.txt
+sudo reboot now
+/usr/bin/python3 /home/wave/.vscode-server/extensions/ms-python.python-2025.2.0/python_files/printEnvVariablesToFile.py /home/wave/.vscode-server/extensions/ms-python.python-2025.2.0/python_files/deactivate/bash/envVars.txt
+# Check system services
+sudo systemctl status wav-server.service
+sudo systemctl status wav-browser.service
+# Check user services
+systemctl --user status oscviz.service
+ls -la ~/.config/autostart/wav.desktop
+ps axjf | grep -E 'firefox|node|server.js|python'
+sudo systemctl status wav-server.service
+sudo systemctl status wav-browser.service
+sudo systemctl disable wav-server.service
+sudo systemctl disable wav-browser.service
+sudo rm /etc/systemd/system/wav-server.service
+sudo rm /etc/systemd/system/wav-browser.service
+sudo systemctl daemon-reload
+sudo systemctl list-unit-files | grep wav
+ls -la ~/.config/systemd/user/default.target.wants/oscviz.service
+chmod +x /home/wave/W-AV/start-wav.sh
+systemctl --user disable oscviz.service
+systemctl --user stop oscviz.service
+sudo reboot now
+sudo shutdown now
+sudo raspi-config
+# System Options → Boot / Auto Login → Console Autologin
+sudo systemctl disable wav.desktop
+echo "Hidden=true" >> ~/.config/autostart/wav.desktop
+chmod +x /home/wave/minimal-wav-start.sh
+chmod +x /home/wave/minimal-x-session.sh
+sudo chmod +x /home/wave/minimal-wav-start.sh
+sudo chmod +x /home/wave/W-AV/minimal-wav-start.sh
+sudo chmod +x /home/wave/W-AV/minimal-x-session.sh
+sudo reboot now
+/usr/bin/python3 /home/wave/.vscode-server/extensions/ms-python.python-2025.2.0/python_files/printEnvVariablesToFile.py /home/wave/.vscode-server/extensions/ms-python.python-2025.2.0/python_files/deactivate/bash/envVars.txt
+echo $DISPLAY
+xset q
+sudo journalctl -b | grep X
+# First, clean up existing .bash_profile
+mv ~/.bash_profile ~/.bash_profile.bak
+touch ~/.bash_profile
+# Add the correct line (just once)
+echo '[[ -z $DISPLAY && $XDG_VTNR -eq 1 ]] && startx /home/wave/W-AV/minimal-x-session.sh' > ~/.bash_profile
+chmod +x /home/wave/W-AV/minimal-x-session.sh
+chmod +x /home/wave/W-AV/minimal-wav-start.sh
+sudo reboot now
+/usr/bin/python3 /home/wave/.vscode-server/extensions/ms-python.python-2025.2.0/python_files/printEnvVariablesToFile.py /home/wave/.vscode-server/extensions/ms-python.python-2025.2.0/python_files/deactivate/bash/envVars.txt
+xrandr --query
+xrandr --output HDMI-2 --rotate right
+echo $XDG_SESSION_TYPE
+who -r   # Check current runlevel
+loginctl # Check active sessions
+ps -e | grep X
+sudo reboot now
+/usr/bin/python3 /home/wave/.vscode-server/extensions/ms-python.python-2025.2.0/python_files/printEnvVariablesToFile.py /home/wave/.vscode-server/extensions/ms-python.python-2025.2.0/python_files/deactivate/bash/envVars.txt
+xrandr --query
+ps -e | grep X
+xrandr --output HDMI-2 --rotate right
+sudo xrandr --output HDMI-2 --rotate right
+sudo xrandr --query
+sudo tty --query
+tty --help
+export DISPLAY=:0
+export XAUTHORITY=/home/wave/.Xauthority
+xrandr --output HDMI-2 --rotate right
+xrandr --query
+sudo reboot now
+/usr/bin/python3 /home/wave/.vscode-server/extensions/ms-python.python-2025.2.0/python_files/printEnvVariablesToFile.py /home/wave/.vscode-server/extensions/ms-python.python-2025.2.0/python_files/deactivate/bash/envVars.txt
+xrandr --query
+sudo reboot now
+/usr/bin/python3 /home/wave/.vscode-server/extensions/ms-python.python-2025.2.0/python_files/printEnvVariablesToFile.py /home/wave/.vscode-server/extensions/ms-python.python-2025.2.0/python_files/deactivate/bash/envVars.txt
+xrandr --query
+export DISPLAY=:0
+export XAUTHORITY=/home/wave/.Xauthority
+xrandr --query
+# Rotate the second screen (HDMI-2) 90 degrees
+xrandr --output HDMI-2 --rotate right
+sudo reboot now
+export DISPLAY=:0
+export XAUTHORITY=/home/wave/.Xauthority
+xrandr --query
+sudo reboot now
+ps -e | grep X
+loginctl # Check active sessions
+chmod +x /home/wave/W-AV/minimal-x-session.sh
+chmod +x /home/wave/W-AV/minimal-wav-start.sh
+sudo reboot now
+chmod +x /home/wave/W-AV/minimal-x-session.sh
+chmod +x /home/wave/W-AV/minimal-wav-start.sh
+sudo reboot now
+/usr/bin/python3 /home/wave/.vscode-server/extensions/ms-python.python-2025.2.0/python_files/printEnvVariablesToFile.py /home/wave/.vscode-server/extensions/ms-python.python-2025.2.0/python_files/deactivate/bash/envVars.txt
+chmod +x /home/wave/W-AV/minimal-x-session.sh
+chmod +x /home/wave/W-AV/minimal-wav-start.sh
+systemctl --user status oscviz.service
+systemctl --user enable oscviz.service
+chmod +x /home/wave/W-AV/minimal-x-session.sh
+chmod +x /home/wave/W-AV/minimal-wav-start.sh
+sudo reboot now
+rasbpi config
+rasbpiconfig
+rasbpi_config
+rasbpi-config
+-help
+help
+raspi-config
+sudo raspi-config
+sudo reboot now
+systemctl --user status oscviz.service
+systemctl --user disable oscviz.service
+sudo shutdown now
+/usr/bin/python3 /home/wave/.vscode-server/extensions/ms-python.python-2025.2.0/python_files/printEnvVariablesToFile.py /home/wave/.vscode-server/extensions/ms-python.python-2025.2.0/python_files/deactivate/bash/envVars.txt
+echo '[[ -z $DISPLAY && $XDG_VTNR -eq 1 ]] && startx /home/wave/W-AV/minimal-x-session.sh' > ~/.bash_profile
+sudo apt update && apt-cache policy openbox
+apt list --upgradable
+apt --help
+apt upgrade
+apt full-upgrade
+sudo apt full-upgrade
+chmod +x /home/wave/minimal-wav-start.sh
+chmod +x /home/wave/minimal-x-session.sh
+sudo chmod +x /home/wave/W-AV/minimal-wav-start.sh
+sudo chmod +x /home/wave/W-AV/minimal-x-session.sh
+systemctl --user disable oscviz.service
+sudo reboot now
+sudo raspi-config
+sudo systemctl daemon-reload
+sudo systemctl restart power-switch.service
+/usr/bin/vcgencmd display_power 0
+xrandr --output HDMI-1 --off
+xrandr --output Screen0 --off
+xrandr --query
+export DISPLAY=:0
+export XAUTHORITY=/home/wave/.Xauthority
+xrandr --query
+sudo xrandr --output HDMI-2 --rotate right
+xrandr --output HDMI-1 --off
+xrandr --output HDMI-1 --auto
+xrandr --output HDMI-1 --on
+xrandr --help
+xrandr --output HDMI-2 --off
+xrandr --output HDMI-1 --off
+xrandr --output HDMI-1 --auto
+xrandr --output HDMI-2 --auto
+sudo systemctl daemon-reload
+sudo systemctl restart power-switch.service
+sudo reboot now
+/usr/bin/python3 /home/wave/.vscode-server/extensions/ms-python.python-2025.2.0/python_files/printEnvVariablesToFile.py /home/wave/.vscode-server/extensions/ms-python.python-2025.2.0/python_files/deactivate/bash/envVars.txt
+sudo reboot now
+sudo shutdown now
+/usr/bin/python3 /home/wave/.vscode-server/extensions/ms-python.python-2025.2.0/python_files/printEnvVariablesToFile.py /home/wave/.vscode-server/extensions/ms-python.python-2025.2.0/python_files/deactivate/bash/envVars.txt
+cd W-AV
+python3 OscViz/test_adc.py
+sudo apt-get install python3-gpiozero
+python3
+python3 -c "import gpiozero; print(gpiozero.__version__)"
+pip install gpiozero
+python3 -c "import gpiozero; print(gpiozero.__version__)"
+python3 OscViz/test_adc.py
+sudo raspi-config nonint do_spi 0
+python3 OscViz/test_adc.py
+sudo systemctl daemon-reload
+sudo systemctl restart gpio-control.service
+python3 OscViz/test_adc.py
+pip3 install spidev
+python3 OscViz/adcTest2.py
+python3 OscViz/test_adc.py
+lsmod | grep spi
+ls -l /dev/spi*
+python3 OscViz/adcTest2.py
+# Check if SPI module is loaded
+lsmod | grep spi
+# Enable SPI if needed (if not already done)
+sudo raspi-config
+# Navigate to: Interface Options > SPI > Enable
+# Check SPI devices
+ls -l /dev/spi*
+lsmod | grep spi
+python3 OscViz/adcTest2.py
+pip install adafruit-circuitpython-mcp3xxx
+python3 OscViz/adcTest2.py
+sudo systemctl status audio-eq.service
+sudo systemctl daemon-reload
+sudo systemctl restart audio-eq.service
+sudo systemctl status audio-eq.service
+sudo journalctl -fu audio-eq.service
+sudo systemctl stop audio-eq.service
+sudo pip3 install adafruit-circuitpython-mcp3xxx
+sudo apt-get install python3-adafruit-circuitpython-mcp3xxx
+pip3 install adafruit-circuitpython-mcp3xxx
+sudo pip3 install adafruit-circuitpython-mcp3xxx
+# Exit the virtual environment if you're in it
+deactivate
+sudo journalctl -fu audio-eq.service
+sudo systemctl daemon-reload
+sudo systemctl restart audio-eq.service
+sudo systemctl status audio-eq.service
+sudo journalctl -fu audio-eq.service
+sudo systemctl stop audio-eq.service
+sudo apt-get install python3-adafruit-circuitpython-mcp3xxx
+sudo apt-get install python-adafruit-circuitpython-mcp3xxx
+# If using a virtual environment
+cd /home/wave/W-AV/OscViz/env
+source bin/activate
+pip install adafruit-circuitpython-mcp3xxx
+deactivate
+sudo systemctl daemon-reload
+sudo systemctl restart audio-eq.service
+sudo journalctl -fu audio-eq.service
+sudo systemctl stop audio-eq.service
+sudo pip3 install adafruit-circuitpython-mcp3xxx
+python3
+sudo systemctl daemon-reload
+sudo systemctl restart audio-eq.service
+sudo journalctl -fu audio-eq.service
+sudo python3
+sudo pip3 install adafruit-circuitpython-mcp3xxx
+sudo pip install adafruit-circuitpython-mcp3xxx
+cd
+source env/bin/activate
+python3 VolEQSliders.py
+python3 W-AV/OscViz/VolEQSliders.py
+pip3 install pulsectl
+python3 W-AV/OscViz/VolEQSliders.py
+sudo apt-get install ladspa-sdk swh-plugins
+pactl list modules | grep -E 'pre_eq|post_eq|eq_sink'
+python3 W-AV/OscViz/VolEQSliders.py
+sudo systemctl stop audio-eq.service
+sudo systemctl status audio-eq.service
+sudo systemctl disable audio-eq.service
+python3 direct_eq.py
+python3 W-AV/OscViz/direct_eq.py
+/usr/bin/python3 /home/wave/.vscode-server/extensions/ms-python.python-2025.2.0/python_files/printEnvVariablesToFile.py /home/wave/.vscode-server/extensions/ms-python.python-2025.2.0/python_files/deactivate/bash/envVars.txt
+sudo shutdown now
+sudo reboot now
+/usr/bin/python3 /home/wave/.vscode-server/extensions/ms-python.python-2025.2.0/python_files/printEnvVariablesToFile.py /home/wave/.vscode-server/extensions/ms-python.python-2025.2.0/python_files/deactivate/bash/envVars.txt
+sudo systemctl stop audio-eq.service
+sudo systemctl disable audio-eq.service
+sudo reboot now
+cd W-AV
+python3 OscViz/adcTest2.py
+source env/bin/activate
+source OscViz/env/bin/activate
+python3 OscViz/adcTest2.py
+python3 OscViz/test_adc.py
+systemctl list-units --type=service | grep -i eq
+python3 OscViz/adcTest2.py
+python3 OscViz/adafruit_test.py
+python3 OscViz/spi_diagnostics.py
+pip install adafruit-circuitpython-mcp3xxx
+python3 OscViz/adcTest2.py
+gcc /OscViz/adc_test.c -o adc_test
+gcc /OscViz/adc_test.c -o /OscViz/adc_test
+gcc OscViz/adc_test.c -o OscViz/adc_test
+g++ OscViz/adc_test.c -o OscViz/adc_test
+g++ OscViz/adc_test.cpp -o OscViz/adc_test
+sudo apt-get install PiGPIO
+PiGIO --version
+PiGpIO --version
+PiGPIO --version
+gcc -o eq_control OscViz/AVMixing.c -lbcm2835 -lpthread -lm
+gcc -o eq_control AVMixing.c -lbcm2835 -lpthread -lm
+./eq_control
+sudo ./eq_control
+gcc -o eq_control AVMixing.c -lbcm2835 -lpthread -lm
+sudo ./eq_control
+gcc -o eq_control AVMixing.c -lbcm2835 -lpthread -lm
+sudo ./eq_control
+sudo shutdown now
+/usr/bin/python3 /home/wave/.vscode-server/extensions/ms-python.python-2025.2.0/python_files/printEnvVariablesToFile.py /home/wave/.vscode-server/extensions/ms-python.python-2025.2.0/python_files/deactivate/bash/envVars.txt
+sudo shutdown now
+nmcli device wifi rescan
+nmcli device wifi
+nmcli device wifi rescan
+nmcli device wifi
+nmcli device wifi connect BTUgoo password blowItUp
+nmcli device wifi rescan
+nmcli device wifi
+nmcli device wifi connect BTUgoo password blowItUp
+nmcli device wifi rescan
+nmcli device wifi
+nmcli device wifi connect BTUgoo password blowItUp
+sudo reboot now
+sudo shutdown now
+sudo shutdown now
+sudo python3 direct_eq.py
+sudo python3 W-AV/OscViz/direct_eq.py
+sudo ./eq_control
+cd W-AV
+sudo ./eq_control
+sudo python3 OscViz/direct_eq.py
+cd OscViz
+sudo python3 direct_eq.py
+pkill VolumeControl.py
+pkill VolumeControl
+python3 VolumeControl
+python3 VolumeControl.py
+cd W-AV/OscViz
+sudo python3 VolEQSliders.py
+pip3 install adafruit_mcp3xx
+pip3 install adafruit_circuitpython
+pip3 install adafruit-circuitpython-mcp3xxx
+sudo pip3 install adafruit-circuitpython-mcp3xxx
+sudo apt-get install adafruit-circuitpython-mcp3xxx
+pip install adafruit-blinka
+pip install adafruit-circuitpython-mcp3xxx
+pip install pulsectl numpy scipy
+sudo python3 VolEQSliders.py
+sudo python3 direct_eq.py
+python3 direct_eq.py
+python3 VolEQSliders.py
+sudo shutdown now
+/usr/bin/python3 /home/wave/.vscode-server/extensions/ms-python.python-2025.2.0/python_files/printEnvVariablesToFile.py /home/wave/.vscode-server/extensions/ms-python.python-2025.2.0/python_files/deactivate/bash/envVars.txt
+cd W-AV
+./eq_control
+sudo ./eq_control
+cd OscViz
+python3 direct_eq.py
+python3 adcTest2.py
+# Compile with:
+gcc -o eq_control AVMixing.c -lbcm2835 -lpthread -lm
+cd ../
+gcc -o eq_control AVMixing.c -lbcm2835 -lpthread -lm
+./eq_control
+sudo ./eq_control
+# First option: Install bcm2835 library and set up permissions
+sudo apt-get install libcap2-bin
+sudo usermod -a -G gpio wave
+sudo setcap cap_sys_rawio+ep /home/wave/W-AV/eq_control
+# Then run without sudo
+./eq_control
+# Install and use spidev-test
+sudo apt-get install spidev-test
+spidev_test -D /dev/spidev0.0 -v
+# Or check if device is detected
+ls -l /dev/spidev*
+# Check if SPI is enabled
+lsmod | grep spi
+gcc -o eq_control AVMixing.c -lbcm2835 -lpthread -lm -g
+# Add your user to the spi group
+sudo usermod -a -G spi wave
+# Set permissions on SPI device
+sudo chmod 660 /dev/spidev0.0
+sudo chmod 660 /dev/spidev0.1
+# Log out and log back in for group changes to take effect
+gcc -o spi_test spi_test.c -lbcm2835
+./spi_test
+sudo ./spi_test
+# Fix SPI permissions permanently
+sudo groupadd -f spi
+sudo usermod -a -G spi wave
+sudo chown root:spi /dev/spidev*
+sudo chmod 660 /dev/spidev*
+# Create a udev rule for persistent permissions
+echo 'KERNEL=="spidev*", GROUP="spi", MODE="0660"' | sudo tee /etc/udev/rules.d/90-spi.rules
+# Compile with debug info
+gcc -o eq_control AVMixing.c -lbcm2835 -lpthread -lm -g
+# Log out and back in for group membership to take effect
+# Then you can run without sudo
+./eq_control
+sudo reboot now
+deactivate
+sudo qpaeq
+export DISPLAY=:0
+sudo qpaeq
+source env/bin/activate
+cd W-AV
+cd OscViz
+sudo qpaeq
+cd W-AV
+./eq_control
+gcc -o alsa_eq_control alsa_eq_control.c -lpigpio -lrt -lm
+sudo ./alsa_eq_control
+amixer -c Pro controls
+amixer -c Pro contents
+python3 OscViz/adafruit_test.py
+gcc -o alsa_eq_control alsa_eq_control.c -lpigpio -lrt -lm
+sudo ./alsa_eq_control
+gcc -o alsa_eq_control alsa_eq_control.c -lpigpio -lrt -lm
+sudo ./alsa_eq_control
+python3 OscViz/direct_eq.py
+qpaeq
+sudo qpaeq
+python3 OscViz/direct_eq.py
+sudo shutdown now
+/usr/bin/python3 /home/wave/.vscode-server/extensions/ms-python.python-2025.2.0/python_files/printEnvVariablesToFile.py /home/wave/.vscode-server/extensions/ms-python.python-2025.2.0/python_files/deactivate/bash/envVars.txt
+sudo reboot now
+sudo shutdown now

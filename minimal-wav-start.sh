@@ -48,13 +48,14 @@ fi
 # Start GPIO control scripts
 echo "Starting GPIO control scripts..."
 cd /home/wave/W-AV
-python3 gpio_control.py &
-python3 gpio_rotary_control.py &
+# Removed these becuase they were started by service scripts
+# python3 gpio_control.py &
+# python3 gpio_rotary_control.py &
 
 # Start oscilloscope visualization
 echo "Starting oscilloscope visualization..."
 cd /home/wave/W-AV/OscViz
-./env/bin/python3 oscVizQt5.py &
+# ./env/bin/python3 oscVizQt5.py & # Also seems to be started by service script
 ./env/bin/python3 VolumeControl.py &
 
 echo "All components started"
