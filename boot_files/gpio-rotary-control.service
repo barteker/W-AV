@@ -7,7 +7,7 @@ Type=simple
 User=root
 Group=gpio
 Environment=PYTHONUNBUFFERED=1
-ExecStart=/home/wave/W-AV/venv/bin/python /home/wave/W-AV/gpio_rotary_control.py
+ExecStart=/home/wave/W-AV/env/bin/python /home/wave/W-AV/gpio_rotary_control.py
 WorkingDirectory=/home/wave/W-AV
 Restart=on-failure
 RestartSec=1

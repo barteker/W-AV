@@ -3,4 +3,5 @@ _defunct
 .credentials
 node_modules
 venv
+env
 OscViz/env

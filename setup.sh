@@ -99,7 +99,6 @@ chmod +x minimal-x-session.sh
 # Create necessary directories
 echo "Creating necessary directories..."
 mkdir -p .credentials
-mkdir -p public
 
 # Setup logging directories
 echo "Setting up logging..."
