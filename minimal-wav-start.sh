@@ -39,9 +39,9 @@ if ! ps -p $FIREFOX_PID > /dev/null; then
     echo "Failed to start Firefox" >&2
 fi
 
-# Start oscilloscope visualization
-cd /home/wave/W-AV/OscViz
-./env/bin/python3 VolumeControl.py >/dev/null 2>&1 &
+# Start volume control
+cd /home/wave/W-AV
+env/bin/python3 OscViz/VolumeControl.py >/dev/null 2>&1 &
 
 # Keep the X session running
 wait
