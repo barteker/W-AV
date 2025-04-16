@@ -53,7 +53,7 @@ sudo reboot
 After installation and reboot:
 - The system will automatically start the X server
 - W-AV services will start automatically
-- The web interface will be available at http://localhost:8888
+- The web interface will be available at http://127.0.0.1:8888
 
 ### 4. Troubleshooting
 If you need to restore the original boot configuration:
