@@ -3,9 +3,11 @@ const express = require('express');
 const SpotifyWebApi = require('spotify-web-api-node');
 const path = require('path');
 const fs = require('fs');
+const fetch = require('node-fetch');
 const app = express();
 const server = require('http').createServer(app);
 const io = require('socket.io')(server);
+const crypto = require('crypto');
 
 // Add this line to define the port
 const PORT = process.env.PORT || 8888;
@@ -39,17 +41,33 @@ if (!process.env.SPOTIFY_CLIENT_ID || !process.env.SPOTIFY_CLIENT_SECRET) {
 const spotifyApi = new SpotifyWebApi({
     clientId: process.env.SPOTIFY_CLIENT_ID,
     clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
-    redirectUri: 'http://localhost:8888/callback'  
+    redirectUri: 'http://127.0.0.1:8888/callback'  
 });
 
 const TOKEN_PATH = path.join(__dirname, '.credentials');
 const TOKEN_FILE = path.join(TOKEN_PATH, 'spotify_tokens.json');
 
-const saveTokens = (tokens) => {
+function generateCodeVerifier() {
+    return crypto.randomBytes(32)
+        .toString('base64')
+        .replace(/[^a-zA-Z0-9]/g, '')
+        .substr(0, 128);
+}
+
+function generateCodeChallenge(verifier) {
+    return crypto.createHash('sha256')
+        .update(verifier)
+        .digest('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=/g, '');
+}
+
+const saveTokens = (tokens, codeVerifier = null) => {
     if (!fs.existsSync(TOKEN_PATH)) {
         fs.mkdirSync(TOKEN_PATH, { recursive: true });
     }
-    fs.writeFileSync(TOKEN_FILE, JSON.stringify(tokens));
+    fs.writeFileSync(TOKEN_FILE, JSON.stringify({ ...tokens, codeVerifier }));
 };
 
 const loadTokens = () => {
@@ -79,24 +97,76 @@ app.get('/login', (req, res) => {
     if (fs.existsSync(TOKEN_FILE)) {
         fs.unlinkSync(TOKEN_FILE);
     }
+    
     // Reset API client state
     spotifyApi.setAccessToken(null);
     spotifyApi.setRefreshToken(null);
     deviceId = null;
     isActive = false;
     
-    const authorizeURL = spotifyApi.createAuthorizeURL(SCOPES, 'state-token', true);
-    res.redirect(authorizeURL);
+    // Generate PKCE verifier and challenge
+    const codeVerifier = generateCodeVerifier();
+    const codeChallenge = generateCodeChallenge(codeVerifier);
+    
+    // Save code verifier for later use
+    saveTokens({ codeVerifier }, codeVerifier);
+    
+    // Create authorization URL with correct parameters
+    const state = crypto.randomBytes(16).toString('hex');
+    const authorizeURL = new URL('https://accounts.spotify.com/authorize');
+    authorizeURL.searchParams.append('client_id', process.env.SPOTIFY_CLIENT_ID);
+    authorizeURL.searchParams.append('response_type', 'code');
+    authorizeURL.searchParams.append('redirect_uri', spotifyApi.getRedirectURI());
+    authorizeURL.searchParams.append('state', state);
+    authorizeURL.searchParams.append('scope', SCOPES.join(' '));
+    authorizeURL.searchParams.append('code_challenge_method', 'S256');
+    authorizeURL.searchParams.append('code_challenge', codeChallenge);
+    
+    res.redirect(authorizeURL.toString());
 });
 
 app.get('/callback', async (req, res) => {
-    const { code } = req.query;
+    const { code, state } = req.query;
+    const savedTokens = loadTokens();
+    
+    if (!savedTokens || !savedTokens.codeVerifier) {
+        console.error('No code verifier found');
+        res.redirect('/login');
+        return;
+    }
+    
     try {
-        const data = await spotifyApi.authorizationCodeGrant(code);
+        // Create a new instance for token exchange
+        const tokenExchange = new SpotifyWebApi({
+            clientId: process.env.SPOTIFY_CLIENT_ID,
+            redirectUri: spotifyApi.getRedirectURI()
+        });
+
+        // Exchange the code for tokens using PKCE
+        const response = await fetch('https://accounts.spotify.com/api/token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                client_id: process.env.SPOTIFY_CLIENT_ID,
+                grant_type: 'authorization_code',
+                code: code,
+                redirect_uri: spotifyApi.getRedirectURI(),
+                code_verifier: savedTokens.codeVerifier
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Token exchange failed: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        
         const tokens = {
-            access_token: data.body.access_token,
-            refresh_token: data.body.refresh_token,
-            expires_at: Date.now() + (data.body.expires_in * 1000)
+            access_token: data.access_token,
+            refresh_token: data.refresh_token,
+            expires_at: Date.now() + (data.expires_in * 1000)
         };
         
         saveTokens(tokens);
@@ -463,5 +533,5 @@ app.use((error, req, res, next) => {
 
 // Update your existing server.listen to use the http server
 server.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Server running on http://127.0.0.1:${PORT}`);
 });

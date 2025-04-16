@@ -54,40 +54,40 @@ def handle_button(channel):
     """Handle button press events"""
     try:
         if channel == PLAY_BTN:
-            response = requests.get('http://localhost:8888/player-state')
+            response = requests.get('http://127.0.0.1:8888/player-state')
             if response.status_code == 200:
                 state = response.json()
                 if not state or not state.get('is_playing'):
-                    requests.post('http://localhost:8888/play')
+                    requests.post('http://127.0.0.1:8888/play')
             
         elif channel == STOP_BTN:
-            response = requests.get('http://localhost:8888/player-state')
+            response = requests.get('http://127.0.0.1:8888/player-state')
             if response.status_code == 200:
                 state = response.json()
                 if state and state.get('is_playing'):
-                    requests.post('http://localhost:8888/pause')
+                    requests.post('http://127.0.0.1:8888/pause')
                     
         elif channel == NEXT_BTN:
             # Get current state before skipping
-            response = requests.get('http://localhost:8888/player-state')
+            response = requests.get('http://127.0.0.1:8888/player-state')
             was_playing = False
             if response.status_code == 200:
                 state = response.json()
                 was_playing = state and state.get('is_playing')
             
             # Skip to next track without automatically playing
-            requests.post('http://localhost:8888/next')
+            requests.post('http://127.0.0.1:8888/next')
             
         elif channel == PREV_BTN:
             # Get current state before skipping
-            response = requests.get('http://localhost:8888/player-state')
+            response = requests.get('http://127.0.0.1:8888/player-state')
             was_playing = False
             if response.status_code == 200:
                 state = response.json()
                 was_playing = state and state.get('is_playing')
             
             # Skip to previous track without automatically playing
-            requests.post('http://localhost:8888/previous')
+            requests.post('http://127.0.0.1:8888/previous')
             
     except Exception as e:
         logging.error(f"Button press error: {e}")

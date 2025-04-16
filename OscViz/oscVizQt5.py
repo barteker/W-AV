@@ -8,7 +8,7 @@ import pyqtgraph as pg
 class AudioStreamThread(QThread):
     data_signal = pyqtSignal(np.ndarray)
 
-    def __init__(self, device_index, chunk=4096, rate=44100):
+    def __init__(self, device_index, chunk=2048, rate=44100):
         super().__init__()
         self.device_index = device_index
         self.CHUNK = chunk
@@ -31,6 +31,7 @@ class AudioStreamThread(QThread):
             try:
                 data = self.stream.read(self.CHUNK, exception_on_overflow=False)
                 audio_data = np.frombuffer(data, dtype=np.int16)
+                # audio_data = audio_data[::2]
                 self.data_signal.emit(audio_data)
             except Exception as e:
                 print(f"Error in audio thread: {e}")
@@ -44,6 +45,9 @@ class AudioStreamThread(QThread):
 class MicrophoneOscilloscope(QMainWindow):
     def __init__(self):
         super().__init__()
+        
+        self.setGeometry(0, 0, 1920, 480)
+
         # Remove window borders
         self.setWindowFlags(Qt.FramelessWindowHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
@@ -61,15 +65,17 @@ class MicrophoneOscilloscope(QMainWindow):
         self.setCentralWidget(main_widget)
         layout = QVBoxLayout()
         # Remove margins to use full space
-        layout.setContentsMargins(0, 0, 0, 0)
+        # layout.setContentsMargins(0, 0, 0, 0)
 
         self.plot_widget = pg.PlotWidget()
         self.plot_widget.setBackground("black")
-        self.plot_widget.setYRange(-10000, 10000)
-        self.plot_widget.setXRange(0, 4096)
+        self.plot_widget.setYRange(-32768, 32768)
+        self.plot_widget.setXRange(0, 2048)
         self.plot_widget.showGrid(x=False, y=False)
         self.plot_widget.hideAxis("bottom")
         self.plot_widget.hideAxis("left")
+        # self.plot_widget.setDownsampling(mode='peak', auto=True)
+
         self.signal_curve = self.plot_widget.plot(pen=pg.mkPen(color="lime", width=1))
         layout.addWidget(self.plot_widget)
 

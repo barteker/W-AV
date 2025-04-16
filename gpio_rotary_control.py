@@ -33,7 +33,7 @@ items = []
 def fetch_tab_data(tab_name):
     """Fetch data for the specified tab"""
     try:
-        response = requests.get(f'http://localhost:8888/{tab_name}')
+        response = requests.get(f'http://127.0.0.1:8888/{tab_name}')
         if response.status_code == 200:
             data = response.json()
             # Transform the data into a consistent format
@@ -124,7 +124,7 @@ def update_interface(tab=None, item=None, returnToTabs=False, focus_change=None,
         if trigger_click:
             data['trigger_click'] = True
             
-        requests.post('http://localhost:8888/ui-update', json=data)
+        requests.post('http://127.0.0.1:8888/ui-update', json=data)
     except Exception as e:
         logging.error(f"Failed to update interface: {e}")
 

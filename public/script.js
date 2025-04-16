@@ -25,7 +25,7 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     player = new Spotify.Player({ // Remove 'const' here
         name: 'W/AV Device',
         getOAuthToken: cb => { cb(token); },
-        volume: 0.5
+        volume: 1
     });
 
     // Add not ready listener
@@ -87,9 +87,24 @@ window.onSpotifyWebPlaybackSDKReady = () => {
     });
 
     player.addListener('authentication_error', ({ message }) => {
+        console.error('Authentication Error:', message);
         statusEl.textContent = 'Authentication Error: ' + message;
         statusEl.classList.add('error');
-        setTimeout(() => window.location.href = '/login', 2000);
+        
+        // Try to refresh the token first
+        fetch('/refresh-token')
+            .then(response => response.json())
+            .then(data => {
+                if (data.token) {
+                    window.location.reload();
+                } else {
+                    throw new Error('Token refresh failed');
+                }
+            })
+            .catch(() => {
+                // If refresh fails, redirect to login
+                setTimeout(() => window.location.href = '/login', 2000);
+            });
     });
 
     player.addListener('account_error', ({ message }) => {
@@ -183,18 +198,39 @@ window.onSpotifyWebPlaybackSDKReady = () => {
         });
     };
 
+    // Add token refresh handling with PKCE
     setInterval(() => {
         fetch('/refresh-token')
             .then(response => response.json())
             .then(data => {
                 if (data.token) {
-                    window.location.reload();
+                    // Update the token in the URL without reloading
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('token', data.token);
+                    window.history.replaceState({}, '', url.toString());
+                    
+                    // Update the token for future API calls
+                    token = data.token;
+                    
+                    // Reinitialize the player with the new token
+                    if (player) {
+                        player.disconnect();
+                        player = new Spotify.Player({
+                            name: 'W/AV Device',
+                            getOAuthToken: cb => { cb(token); },
+                            volume: 0.5
+                        });
+                        player.connect();
+                    }
                 }
             })
             .catch(error => {
+                console.error('Token refresh failed:', error);
                 statusEl.textContent = 'Token refresh failed';
+                // Redirect to login if token refresh fails
+                setTimeout(() => window.location.href = '/login', 2000);
             });
-    }, 30 * 60 * 1000);
+    }, 30 * 60 * 1000); // Check every 30 minutes
 
 };
 

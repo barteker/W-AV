@@ -23,25 +23,28 @@ sleep 5
 
 # Wait for the server to be ready (longer timeout)
 for i in {1..15}; do
-    if curl -s http://localhost:8888 > /dev/null; then
+    if curl -s http://127.0.0.1:8888 > /dev/null; then
         break
     fi
     sleep 1
 done
 
-# Start Firefox in kiosk mode
-firefox --kiosk http://localhost:8888/ --window-position=0,0 &
-FIREFOX_PID=$!
+# Start Chromium in kiosk mode with HTTP
+chromium-browser --kiosk \
+                --window-position=0,0 \
+                http://127.0.0.1:8888/ &
+BROWSER_PID=$!
 sleep 5
 
-# Check if Firefox started successfully
-if ! ps -p $FIREFOX_PID > /dev/null; then
-    echo "Failed to start Firefox" >&2
+# Check if Chromium started successfully
+if ! ps -p $BROWSER_PID > /dev/null; then
+    echo "Failed to start Chromium" >&2
 fi
 
 # Start volume control
 cd /home/wave/W-AV
 env/bin/python3 OscViz/VolumeControl.py >/dev/null 2>&1 &
+PYTHONPATH=/usr/lib/python3/dist-packages python3 OscViz/oscVizQt5.py >/dev/null 2>&1 &
 
 # Keep the X session running
 wait
