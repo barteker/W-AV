@@ -1,3 +1,29 @@
+/* Custom scrollbar styling for Chromium */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #1a1a1a;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #444;
+}
+
+/* Firefox scrollbar styling */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #333 #1a1a1a;
+}
+
 body {
     margin: 0;
     padding: 0;
@@ -167,6 +193,28 @@ button {
     border-top: 1px solid #333;
     border-bottom: 1px solid #333;
     padding-bottom: 15px;
+    /* Explicitly set scrollbar styling */
+    scrollbar-width: thin;
+    scrollbar-color: #333 #1a1a1a;
+}
+
+#library-content::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+#library-content::-webkit-scrollbar-track {
+    background: #1a1a1a;
+    border-radius: 4px;
+}
+
+#library-content::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 4px;
+}
+
+#library-content::-webkit-scrollbar-thumb:hover {
+    background: #444;
 }
 
 /* Split layout */
@@ -191,6 +239,13 @@ button {
     overflow-y: auto;
     border-right: 2px solid #333;
     padding-right: 10px;
+    /* Hide scrollbar for library container */
+    scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none;  /* IE and Edge */
+}
+
+.library-container::-webkit-scrollbar {
+    display: none;  /* Chromium */
 }
 
 .now-playing-container {
