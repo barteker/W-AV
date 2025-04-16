@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import time
 import numpy as np
-import pulsectl
 import threading
 import logging
 import traceback
@@ -9,6 +8,7 @@ import board
 import busio
 import digitalio
 import os
+import subprocess
 from logging.handlers import RotatingFileHandler
 from adafruit_mcp3xxx.analog_in import AnalogIn
 from adafruit_mcp3xxx.mcp3008 import MCP3008
@@ -26,7 +26,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# EQ bands center frequencies (Hz)
+# EQ bands center frequencies (Hz) - matched to Calf EQ8
 EQ_FREQS = [63, 250, 500, 1000, 2000, 4000, 8000]
 
 class DirectEQ:
@@ -38,10 +38,15 @@ class DirectEQ:
             self.mcp = MCP3008(self.spi, self.cs)
             
             self.adc_channels = []
-            for i in range(8):  # 7 EQ bands + volume
+            for i in range(7):  # 7 EQ bands
                 self.adc_channels.append(AnalogIn(self.mcp, i))
             
-            logger.info("MCP3008 initialized using Adafruit CircuitPython library")
+            logger.info("MCP3008 initialized successfully")
+            
+            # Test ADC readings
+            test_readings = [self.read_adc(i) for i in range(7)]
+            logger.info(f"Initial ADC readings: {test_readings}")
+            
         except Exception as e:
             logger.error(f"Failed to initialize MCP3008: {e}")
             logger.error(traceback.format_exc())
@@ -50,33 +55,47 @@ class DirectEQ:
         self.lock = threading.Lock()
         self.running = True
         
-        # Connect to PulseAudio
-        self.pulse = pulsectl.Pulse('eq-controller')
-        logger.info("Connected to PulseAudio")
-        
         # Current settings
         self.eq_gains = [0.0] * 7
-        self.volume = 1.0
-
-        # Set up system EQ if possible
-        self.setup_system_eq()
-    
-    def setup_system_eq(self):
-        """Try to load PulseAudio equalizer module if not already loaded"""
+        
+        # Simple smoothing with larger window
+        self.gain_history = [[0.0] * 5 for _ in range(7)]  # 5-sample history for each band
+        
+        # Start calfjackhost if not running
+        self._setup_calf()
+        
+    def _setup_calf(self):
+        """Set up Calf EQ8 plugin"""
         try:
-            # Check if equalizer module is already loaded
-            result = os.popen('pactl list modules | grep equalizer').read()
-            if not result:
-                # Try to load the module-equalizer-sink
-                os.system('pactl load-module module-equalizer-sink')
-                os.system('pactl set-default-sink equalizer')
-                logger.info("Loaded PulseAudio equalizer module")
-            else:
-                logger.info("PulseAudio equalizer already loaded")
-            return True
+            # Check if calfjackhost is already running
+            result = subprocess.run(["pgrep", "calfjackhost"], capture_output=True, text=True)
+            if result.returncode != 0:
+                # Start calfjackhost with EQ8
+                subprocess.Popen(["calfjackhost", "eq8:eq"])
+                time.sleep(2)  # Wait for startup
+            
+            # Set up initial connections if needed
+            self._setup_connections()
+            
+            logger.info("Calf EQ8 initialized")
+            
         except Exception as e:
-            logger.error(f"Couldn't set up system EQ: {e}")
-            return False
+            logger.error(f"Failed to set up Calf EQ8: {e}")
+            raise
+            
+    def _setup_connections(self):
+        """Set up JACK connections"""
+        try:
+            # Connect system capture to EQ input
+            subprocess.run(["jack_connect", "system:capture_1", "eq8:In L"])
+            subprocess.run(["jack_connect", "system:capture_2", "eq8:In R"])
+            
+            # Connect EQ output to system playback
+            subprocess.run(["jack_connect", "eq8:Out L", "system:playback_1"])
+            subprocess.run(["jack_connect", "eq8:Out R", "system:playback_2"])
+            
+        except Exception as e:
+            logger.error(f"Failed to set up JACK connections: {e}")
     
     def read_adc(self, channel):
         """Read from MCP3008 ADC channel (0-7) using Adafruit library"""
@@ -84,7 +103,6 @@ class DirectEQ:
             try:
                 raw_value = self.adc_channels[channel].value
                 scaled_value = int(raw_value * 1023 / 65535)
-                logger.debug(f"Channel {channel} raw: {raw_value}, scaled: {scaled_value}, voltage: {self.adc_channels[channel].voltage:.2f}V")
                 return scaled_value
             except Exception as e:
                 logger.error(f"ADC read error on channel {channel}: {e}")
@@ -94,75 +112,57 @@ class DirectEQ:
     def update_controls(self):
         """Read potentiometer values and update settings"""
         try:
-            # Read all raw values
-            raw_values = [self.read_adc(i) for i in range(8)]
-            logger.debug(f"Raw ADC values: {raw_values}")
+            # Read all channels at once
+            raw_values = [self.read_adc(i) for i in range(7)]
             
-            # Update EQ settings (channels 0-6)
+            # Convert to dB values (-12 to +12 range)
+            new_gains = []
             eq_changed = False
-            for i in range(7):
-                raw_value = raw_values[i]
-                # Convert from 0-1023 to -12dB to +12dB
+            
+            for i, raw_value in enumerate(raw_values):
+                # Convert to dB (-12 to +12 range)
                 gain_db = (raw_value / 1023.0) * 24.0 - 12.0
                 
-                # Update if changed significantly
-                if abs(gain_db - self.eq_gains[i]) > 0.5:
-                    self.eq_gains[i] = gain_db
-                    eq_changed = True
-                    logger.debug(f"Updated EQ band {i} (center: {EQ_FREQS[i]}Hz) gain to {gain_db}dB")
-            
-            # Update volume (channel 7)
-            raw_volume = raw_values[7]
-            new_volume = raw_volume / 1023.0
-            
-            # Update volume if changed significantly
-            if abs(new_volume - self.volume) > 0.02:
-                self.volume = new_volume
-                self.apply_volume_setting()
-                logger.debug(f"Volume updated to {self.volume*100:.1f}%")
+                # Update history and calculate moving average
+                self.gain_history[i].pop(0)
+                self.gain_history[i].append(gain_db)
+                avg_gain = sum(self.gain_history[i]) / len(self.gain_history[i])
                 
-            # Update system EQ if needed
+                # Round to nearest 0.5 dB
+                rounded_gain = round(avg_gain * 2) / 2
+                
+                # Check if changed significantly (0.5 dB threshold)
+                if abs(rounded_gain - self.eq_gains[i]) >= 0.5:
+                    eq_changed = True
+                    self.eq_gains[i] = rounded_gain
+                    logger.debug(f"Band {i} ({EQ_FREQS[i]}Hz): {rounded_gain:+.1f}dB")
+            
             if eq_changed:
                 self.apply_eq_settings()
-                
+            
         except Exception as e:
-            logger.error(f"Error reading controls: {e}")
+            logger.error(f"Error updating controls: {e}")
             logger.error(traceback.format_exc())
     
     def apply_eq_settings(self):
-        """Apply EQ settings to the system"""
+        """Apply EQ settings using Calf EQ8"""
         try:
-            # Method 1: If equalizer-sink is available
-            try:
-                # Each band needs specific command
-                for i, gain_db in enumerate(self.eq_gains):
-                    # Convert to filter parameter (0.0 to 1.0 where 0.5 is neutral)
-                    gain_norm = (gain_db + 12) / 24.0
-                    # Apply to appropriate band
-                    os.system(f'pactl set-sink-equalizer-sink-input 0 {i} {gain_norm}')
-            except Exception as eq_error:
-                logger.debug(f"Couldn't use equalizer-sink: {eq_error}")
-                # Fall back to alternate methods if available
+            for i, gain in enumerate(self.eq_gains):
+                # Set EQ band gain using Calf's control interface
+                cmd = [
+                    "calf-ctl",
+                    "set",
+                    "eq8",
+                    f"band{i+1}_gain",
+                    f"{gain:.1f}"
+                ]
+                subprocess.run(cmd, capture_output=True)
             
-            logger.info(f"Applied EQ settings: {self.eq_gains}")
+            logger.info(f"Applied EQ settings: {[f'{g:+.1f}dB' for g in self.eq_gains]}")
             
         except Exception as e:
             logger.error(f"Error applying EQ settings: {e}")
-    
-    def apply_volume_setting(self):
-        """Apply volume setting to default sink"""
-        try:
-            with self.pulse as p:
-                # Get default sink
-                sink_name = p.server_info().default_sink_name
-                sink = p.get_sink_by_name(sink_name)
-                
-                # Set volume (PulseAudio uses 0-65536 range)
-                volume = int(self.volume * 65536)
-                p.volume_set(sink, pulsectl.PulseVolumeInfo([volume, volume]))
-                
-        except Exception as e:
-            logger.error(f"Error setting volume: {e}")
+            logger.error(traceback.format_exc())
     
     def start(self):
         """Start control thread"""
@@ -178,9 +178,10 @@ class DirectEQ:
             while self.running:
                 with self.lock:
                     self.update_controls()
-                time.sleep(0.1)  # 10Hz update rate
+                time.sleep(0.05)  # 20Hz update rate
         except Exception as e:
             logger.error(f"Control loop error: {e}")
+            logger.error(traceback.format_exc())
             self.running = False
     
     def stop(self):
@@ -189,9 +190,6 @@ class DirectEQ:
         
         if hasattr(self, 'control_thread'):
             self.control_thread.join(timeout=1.0)
-        
-        if hasattr(self, 'pulse'):
-            self.pulse.close()
         
         logger.info("EQ control system stopped")
 
