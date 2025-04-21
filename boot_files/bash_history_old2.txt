@@ -1,0 +1,502 @@
+# Install Python dependencies
+echo "Installing Python dependencies..."
+pip install --upgrade pip
+pip install -r requirements.txt
+/home/wave/W-AV/env/bin/python /home/wave/W-AV/OscViz/oscVizQt5.py
+sudo apt-get install -y     python3-pip     python3-venv     nodejs     npm     x11-xserver-utils     openbox     firefox-esr     alsa-utils     python3-pyqt5     python3-numpy     python3-scipy     libportaudio2     portaudio19-dev     python3-pyaudio     git
+sudo reboot now
+npm install node-fetch@2 --save
+npm install
+# Navigate to your project directory
+cd /home/wave/W-AV
+# Kill any existing Node.js processes
+pkill -f "node server.js"
+# OR
+pkill node
+# Start the server again
+npm start
+cd /home/wave/W-AV
+mkdir -p ssl
+cd ssl
+# Create a more complete certificate
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout private-key.pem -out certificate.pem -subj "/CN=localhost" -addext "subjectAltName=DNS:localhost,IP:127.0.0.1,IP:$(hostname -I | awk '{print $1}')"
+# Kill any existing node processes
+pkill -f node
+# Start server with the updated configuration
+cd /home/wave/W-AV
+node server.js
+sudo journalctl -v -f server.js
+sudo journalctl -f server.js
+sudo journalctl -f node
+sudo journalctl -f npm
+sudo journalctl -f W-AV
+sudo journalctl -f w-av_software
+cd W-AV
+tail -f spotify-debug.log
+cat spotify-debug.log
+# or to follow in real time:
+tail -f spotify-debug.log
+node server.js | tee spotify-debug-console.log
+# Terminal 1
+cd /home/wave/W-AV
+python3 powerSwitch.py
+# Terminal 2
+cd /home/wave/W-AV
+python3 gpio_control.py
+# Terminal 3
+cd /home/wave/W-AV
+python3 gpio_rotary_control.py
+pkill -f "firefox"
+export DISPLAY=:0
+export XAUTHORITY=/home/wave/.Xauthority
+firefox --kiosk http://127.0.0.1:8888/ --window-position=0,0 &
+FIREFOX_PID=$!
+firefox --kiosk https://127.0.0.1:8888/ --window-position=0,0 &
+export DISPLAY=:0
+export XAUTHORITY=/home/wave/.Xauthority
+firefox --kiosk https://127.0.0.1:8888/ --window-position=0,0 &
+# Find and kill any running Node.js servers
+pkill -f "node server.js"
+# Find and kill any Python controllers
+pkill -f "python3 gpio_control.py"
+pkill -f "python3 powerSwitch.py"
+pkill -f "python3 gpio_rotary_control.py"
+# Navigate to your project directory
+cd /home/wave/W-AV
+# Run the server with Node.js
+node server.js
+cd /home/wave/W-AV
+pkill -f "node server.js"
+npm start
+cd /home/wave/W-AV
+pkill -f "node server.js"
+npm start
+cd /home/wave/W-AV
+pkill -f "node server.js"
+npm start
+pkill -f "node server.js"
+npm start
+pkill -f "node server.js"
+npm start
+pkill -f "node server.js"
+npm start
+node server.js
+pkill -f "node server.js"
+node server.js
+cat spotify-debug.log
+# or to follow in real time:
+tail -f spotify-debug.log
+node server.js | tee spotify-debug-console.log
+pkill -f "node server.js"
+npm start
+mkdir -p /home/wave/W-AV/ssl
+cd /home/wave/W-AV/ssl
+# Generate private key and certificate
+openssl req -x509 -newkey rsa:4096 -keyout private-key.pem -out certificate.pem -days 365 -nodes -subj "/CN=127.0.0.1"
+npm start
+firefox https://127.0.0.1:8888 --kiosk
+export DISPLAY=:0
+export XAUTHORITY=/home/wave/.Xauthority
+firefox https://127.0.0.1:8888 --kiosk
+chrome https://127.0.0.1:8888 --kiosk
+chromium https://127.0.0.1:8888 --kiosk
+sudo system-ctl daemon-reload
+sudo systemctl daemon-reload
+sudo systemctl restart gpio-rotary-control.service
+sudo systemctl status gpio-rotary-control.service
+sudo systemctl daemon-reload
+sudo systemctl restart gpio-rotary-control.service
+sudo systemctl restart gpio-control.service
+sudo systemctl status gpio-control.service
+sudo shutdown now
+ifconfig
+ifconfig
+cd W-AV
+npm start
+ps -a
+ifconfig
+ifconfig
+sudo shutdown now
+export DISPLAY=:0
+export XAUTHORITY=/home/wave/.Xauthority
+crhomium --kiosk https://127.0.0.1:8888/ --window-position=0,0 &
+pkill -f "firefox"
+crhomium --kiosk https://127.0.0.1:8888/ --window-position=0,0 &
+chromium --kiosk https://127.0.0.1:8888/ --window-position=0,0
+firefox --kiosk https://127.0.0.1:8888/         --window-position=0,0         --accept-insecure-certs         --private-window
+pkill -f "node server.js"
+npm start
+cd W-AV
+npm start
+cd /home/wave/W-AV/OscViz
+./env/bin/python3 VolumeControl.py >/dev/null 2>&1 &
+ps -a
+./env/bin/python3 VolumeControl.py
+cd ../
+/env/bin/python3 VolumeControl.py
+/env/bin/python VolumeControl.py
+env/bin/python3 VolumeControl.py
+env/bin/python3 OscViz/VolumeControl.py
+cd /home/wave/W-AV/OscViz
+./env/bin/python3 VolumeControl.py
+cd /home/wave/W-AV
+env/bin/python3 OscViz/VolumeControl.py
+npm install crypto
+cd /home/wave/W-AV && npm start
+pkill -f "node server.js" && sleep 2 && cd /home/wave/W-AV && npm start
+curl -I http://localhost:8888
+cd /home/wave/W-AV && npm install node-fetch
+cd /home/wave/W-AV && pkill -f "node server.js" && sleep 2 && npm start
+pkill "firefox"
+export DISPLAY=:0
+export XAUTHORITY=/home/wave/.Xauthority
+firefox --kiosk http://127.0.0.1:8888/         --window-position=0,0         --private-window &
+FIREFOX_PID=$!
+sleep 5
+# Check if Firefox started successfully
+if ! ps -p $FIREFOX_PID > /dev/null; then     echo "Failed to start Firefox" >&2; fi
+pkill "firefox"
+firefox --kiosk http://127.0.0.1:8888/         --window-position=0,0         --private-window
+sudo shutdown now
+pkill -f "node server.js" && sleep 2 && cd /home/wave/W-AV && npm start
+pkill -f "node server.js" 
+cd W-AV
+npm start
+sudo reboot now
+pkill "oscVizQt5.py"
+pkill "oscVizQt5"
+sudo pkill "oscVizQt5"
+pgrep -a
+pgrep
+pgrep -all
+ps -all
+pkill "firefox"
+chromium-browser --kiosk http://127.0.0.1:8888/         --window-position=0,0
+export DISPLAY=:0
+export XAUTHORITY=/home/wave/.Xauthority
+chromium-browser --kiosk http://127.0.0.1:8888/
+firefox --kiosk http://127.0.0.1:8888/         --window-position=0,0
+chromium-browser --kiosk http://127.0.0.1:8888/         --window-position=0,0
+pkill "npm server.js"
+npm start
+cd W-AV
+npm start
+pkill "script.js"
+pkill "server.js"
+npm start
+pkill -f "node server.js" && sleep 2 && cd /home/wave/W-AV && npm start
+sudo systemctl stop lightdm.service gdm.service display-manager.service && sudo systemctl stop osc-viz.service
+sudo systemctl daemon-reload && sudo systemctl restart osc-viz.service
+chromium-browser --kiosk http://127.0.0.1:8888/         --window-position=0,0
+export DISPLAY=:0
+export XAUTHORITY=/home/wave/.Xauthority
+chromium-browser --kiosk http://127.0.0.1:8888/         --window-position=0,0
+cd /home/wave/W-AV && python3 OscViz/oscVizQt5.py
+cd /home/wave/W-AV && DISPLAY=:0 python3 OscViz/oscVizQt5.py
+sudo systemctl status osc-viz.service
+/usr/bin/python3 /home/wave/W-AV/OscViz/oscVizQt5.py
+/home/wave/W-AV/env/bin/python3 /home/wave/W-AV/OscViz/oscVizQt5.py
+/home/wave/W-AV/env/bin/python /home/wave/W-AV/OscViz/oscVizQt5.py
+cd W-AV
+source env/bin/activate
+/home/wave/W-AV/OscViz/oscVizQt5.py
+OscViz/oscVizQt5.py
+cd /home/wave/W-AV && source env/bin/activate && python OscViz/oscVizQt5.py
+cd /home/wave/W-AV && source env/bin/activate && pip install PyQt5
+sudo apt-get install python3-pyqt5 python3-pyqt5.qtchart
+cd /home/wave/W-AV && python3 OscViz/oscVizQt5.py
+deactivate && cd /home/wave/W-AV && python3 OscViz/oscVizQt5.py
+sudo apt-get install python3-pyqtgraph
+sudo mkdir -p /etc/systemd/system && sudo cp /home/wave/W-AV/boot_files/osc-viz.service /etc/systemd/system/
+sudo systemctl daemon-reload && sudo systemctl enable osc-viz.service && sudo systemctl start osc-viz.service
+sudo systemctl status osc-viz.service
+sudo systemctl daemon-reload && sudo systemctl enable osc-viz.service && sudo systemctl start osc-viz.service
+sudo systemctl restart osc-viz.service
+sudo systemctl daemon-reload && sudo systemctl enable osc-viz.service && sudo systemctl start osc-viz.service
+sudo systemctl daemon-reload && sudo systemctl restart osc-viz.service
+sudo reboot now
+sudo systemctl daemon-reload && sudo systemctl enable osc-viz.service && sudo systemctl start osc-viz.service
+systemctl status osc-viz.service
+sudo systemctl daemon-reload && sudo systemctl enable osc-viz.service && sudo systemctl start osc-viz.service
+sudo reboot now
+/home/wave/W-AV/env/bin/python /home/wave/W-AV/OscViz/oscVizQt5.py
+cd /home/wave/W-AV
+DISPLAY=:0 PYTHONPATH=/usr/lib/python3/dist-packages python3 OscViz/oscVizQt5.py
+sudo systemctl disable osc-viz.service
+sudo reboot now
+ps grep "osc"
+ps 
+ps -a
+pkill 1135
+kill 1135
+PYTHONPATH=/usr/lib/python3/dist-packages python3 OscViz/oscVizQt5.py
+export DISPLAY=:0
+export XAUTHORITY=/home/wave/.Xauthority
+PYTHONPATH=/usr/lib/python3/dist-packages python3 OscViz/oscVizQt5.py
+cd W-AV
+PYTHONPATH=/usr/lib/python3/dist-packages python3 OscViz/oscVizQt5.py
+sudo shutdown now
+sudo apt-get install python3-board python3-adafruit-blinka python3-adafruit-circuitpython-mcp3xxx
+sudo apt-get install python3-circuitpython
+pactl load-module module-equalizer-sink && pactl set-default-sink equalizer
+ls /usr/lib/pulse-*/modules/module-equalizer-sink.so
+pactl load-module module-equalizer-sink sink_name=equalizer.equalizer source_name=equalizer.equalizer.monitor
+sudo apt-get install swh-plugins
+cd W-AV/OscViz && python3 direct_eq.py
+sudo apt-get install python3-pulsectl
+cd W-AV/OscViz && python3 direct_eq.py
+python3 direct_eq.py
+sudo pip3 install adafruit-circuitpython-mcp3xxx
+sudo pip3 install adafruit-circuitpython-mcp3xxx
+sudo apt-get install python3- adafruit-circuitpython-mcp3xxx
+sudo apt-get install python3-adafruit-circuitpython-mcp3xxx
+pip install scipy
+sudo apt-get install python3-scipy
+ls -l /dev/spi*
+pactl list sinks | grep -A 2 "Sink #"
+pactl load-module module-equalizer-sink && pactl list modules | grep equalizer
+sudo apt-get install pulseaudio-equalizer
+ps -a
+kill 1142
+cd W-AV
+PYTHONPATH=/usr/lib/python3/dist-packages python3 OscViz/oscVizQt5.py
+export DISPLAY=:0
+export XAUTHORITY=/home/wave/.Xauthority
+PYTHONPATH=/usr/lib/python3/dist-packages python3 OscViz/oscVizQt5.py
+python3 OscViz/direct_eq.py
+tail -f /home/wave/eq_control.log
+amixer -c Pro controls
+sudo apt-get install alsaequal
+sudo apt-get update
+sudo apt-get install ladspa-sdk swh-plugins
+sudo nano /etc/asound.conf
+sudo modprobe snd-aloop
+python3 OscViz/direct_eq.py
+ls /usr/lib/ladspa/
+rm ~/.asoundrc
+sudo rm ~/.asoundrc
+rm ~/.asoundrc
+cd /.asoundrc
+/usr/bin/python3 /home/wave/.cursor-server/extensions/ms-python.python-2024.12.3-linux-arm64/python_files/printEnvVariablesToFile.py /home/wave/.cursor-server/extensions/ms-python.python-2024.12.3-linux-arm64/python_files/deactivate/bash/envVars.txt
+aplay -l
+sudo apt-get update
+sudo apt-get install libasound2-plugin-equal
+sudo nano /etc/asound.conf
+sudo service alsa-utils restart
+rm ~/.asoundrc
+amixer -c Pro scontrols
+sudo modprobe snd-aloop
+rm ~/.asoundrc
+sudo modprobe snd-aloop
+python3 OscViz/direct_eq.py
+python3 OscViz/direct_eq.py
+sudo lsof | grep snd
+sudo apt-get update
+sudo apt-get install ladspa-sdk swh-plugins pipewire-audio-client-libraries
+sudo systemctl stop alsa-state
+sudo systemctl stop pulseaudio
+sudo rmmod snd-aloop
+sudo reboot now
+sudo rmmod snd-aloop
+# Stop any existing filter chains
+pw-cli unload-module libpipewire-module-filter-chain
+# Restart PipeWire
+systemctl --user restart pipewire pipewire-pulse
+# Make sure the HiFiBerry is the default device
+pw-cli set-default "alsa_output.platform-soc_sound.stereo-fallback"
+# Stop any existing filter chains
+pw-cli unload-module libpipewire-module-filter-chain
+# Restart PipeWire
+systemctl --user restart pipewire pipewire-pulse
+# Make sure the HiFiBerry is the default device
+pw-cli set-default "alsa_output.platform-soc_sound.stereo-fallback"
+# Stop any existing filter chains
+pw-cli unload-module libpipewire-module-filter-chain
+# Restart PipeWire
+systemctl --user restart pipewire pipewire-pulse
+# Make sure the HiFiBerry is the default device
+pw-cli set-default "alsa_output.platform-soc_sound.stereo-fallback"
+# Stop any existing filter chains
+pw-cli unload-module libpipewire-module-filter-chain
+# Restart PipeWire
+systemctl --user restart pipewire pipewire-pulse
+# Make sure the HiFiBerry is the default device
+pw-cli set-default "alsa_output.platform-soc_sound.stereo-fallback"
+# Stop any existing filter chains
+pw-cli unload-module libpipewire-module-filter-chain
+# Restart PipeWire
+systemctl --user restart pipewire pipewire-pulse
+# Make sure the HiFiBerry is the default device
+pw-cli set-default "alsa_output.platform-soc_sound.stereo-fallback"
+systemctl --user restart pipewire pipewire-pulse
+# Stop any existing filter chains
+pw-cli unload-module libpipewire-module-filter-chain
+# Restart PipeWire
+systemctl --user restart pipewire pipewire-pulse
+# Make sure the HiFiBerry is the default device
+pw-cli set-default "alsa_output.platform-soc_sound.stereo-fallback"
+systemctl --user restart pipewire pipewire-pulse
+systemctl --user status pipewire
+# Stop any existing filter chains
+pw-cli unload-module libpipewire-module-filter-chain
+# Restart PipeWire
+systemctl --user restart pipewire pipewire-pulse
+# Make sure the HiFiBerry is the default device
+pw-cli set-default "alsa_output.platform-soc_sound.stereo-fallback"
+# Stop any existing filter chains
+pw-cli unload-module libpipewire-module-filter-chain
+# Restart PipeWire
+systemctl --user restart pipewire pipewire-pulse
+# Make sure the HiFiBerry is the default device
+pw-cli set-default "alsa_output.platform-soc_sound.stereo-fallback"
+pw-jack jack_lsp -c
+pw-cli list-objects | grep -i audio
+systemctl --user restart pipewire pipewire-pulse
+pw-jack jack_lsp -c
+# Stop any existing filter chains
+pw-cli unload-module libpipewire-module-filter-chain
+# Restart PipeWire
+systemctl --user restart pipewire pipewire-pulse
+# Make sure the HiFiBerry is the default device
+pw-cli set-default "alsa_output.platform-soc_sound.stereo-fallback"
+pw-cli list-objects | grep -i audio
+systemctl --user restart pipewire pipewire-pulse
+sudo systemctl --user restart pipewire pipewire-pulse
+systemctl --user restart pipewire pipewire-pulse
+systemctl --user restart pipewire pipewire-pulse
+ps -a
+kill 1150
+export DISPLAY=:0
+export XAUTHORITY=/home/wave/.Xauthority
+PYTHONPATH=/usr/lib/python3/dist-packages python3 OscViz/oscVizQt5.py
+systemctl --user restart pipewire pipewire-pulse
+sudo apt-get install python3-pip calf-plugins pipewire-jack
+pip3 install mido python-rtmidi
+systemctl --user status pipewire pipewire-pulse
+pw-cli unload-module libpipewire-module-filter-chain
+rm ~/.asoundrc
+amixer -c Pro
+python3 OscViz/direct_eq.py
+sudo apt-get install calf-plugins
+sudo apt-get install pipewire-jack
+sudo apt-get install calf-plugins pipewire-jack
+python3 OscViz/direct_eq.py
+killall -9 jackd
+killall -9 calfjackhost
+sudo apt-get install pipewire pipewire-audio-client-libraries pipewire-jack
+sudo apt-get update
+sudo apt-get install ladspa-sdk swh-plugins pipewire-audio-client-libraries
+# Stop any existing filter chains
+pw-cli unload-module libpipewire-module-filter-chain
+# Restart PipeWire
+systemctl --user restart pipewire pipewire-pulse
+# Make sure the HiFiBerry is the default device
+pw-cli set-default "alsa_output.platform-soc_sound.stereo-fallback"
+systemctl --user status pipewire
+# Make sure your user session is properly set up
+loginctl enable-linger $USER
+systemctl --user restart pipewire pipewire-pulse
+# Check PipeWire status
+pw-cli info
+# Check if PipeWire-JACK is available
+pw-jack --check
+# List available JACK ports
+pw-jack jack_lsp
+pw-top
+sudo apt-get install ladspa-sdk swh-plugins
+pw-cli list-objects | grep -i audio
+cat ~/.asoundrc
+aplay -l
+amixer -c Pro
+which jackd
+which pw-cli && which ladspa-sdk
+find /usr/lib/ladspa -name "*.so" | grep -i eq
+pw-cli list-nodes | grep -i mbeq
+pw-link -o
+pw-link -o
+find /usr/lib/ladspa -name "*.so" | grep -i eq
+pw-cli help
+pw-cli list-objects | grep -i filter
+which jackd
+which pw-jack
+which japa jamin carla-jack
+ls -l /usr/bin/j* | grep jack
+pw-jack calfjackhost --list
+pw-jack calfjackhost --no-gui eq8 & sleep 2 && pw-jack jack_lsp
+pw-jack calfjackhost --no-gui eq8 & sleep 2 && pw-jack jack_lsp | grep -i midi
+sudo apt-get install -y jack-utils && pw-jack calfjackhost --no-gui eq8 & sleep 2 && pw-jack jack_lsp | grep -i midi
+sudo apt-get install -y jackd2 libjack-jackd2-0 && pw-jack calfjackhost --no-gui eq8 & sleep 2 && pw-jack jack_lsp | grep -i midi
+pw-cli list-nodes | grep -i eq
+aplay -l
+amixer -c Pro
+which calfjackhost pipewire-jack pavucontrol patchage
+sudo apt-get install pipewire-jack pavucontrol patchage
+sudo mkdir -p /etc/ld.so.conf.d/ && echo "/usr/lib/pipewire-0.3/jack" | sudo tee /etc/ld.so.conf.d/pipewire-jack.conf && sudo ldconfig
+ls -l /etc/pipewire/pipewire.conf
+sudo mkdir -p /etc/pipewire
+echo 'context.properties = { default.clock.rate = 48000 default.clock.quantum = 1024 default.clock.min.quantum = 32 default.clock.max.quantum = 8192 }' | sudo tee /etc/pipewire/pipewire.conf
+echo 'context.objects = [ { factory = adapter args = { factory.name = support.null-audio-sink node.name = "jack" media.class = Audio/Sink object.linger = true audio.position = [ FL FR ] } } ]' | sudo tee -a /etc/pipewire/pipewire.conf
+which pipewire-jack calfjackhost pavucontrol
+sudo apt-get update && sudo apt-get install -y pipewire-jack pavucontrol
+sudo apt-get install -y pavucontrol
+ps aux | grep -E 'pipewire|pulseaudio' | grep -v grep
+ls -la /etc/ld.so.conf.d/pipewire-jack.conf
+cat /etc/ld.so.conf.d/pipewire-jack.conf
+grep -A 10 "factory = adapter" /etc/pipewire/pipewire.conf
+which jack_connect jack_disconnect patchage carla
+sudo apt-get install -y patchage
+sudo apt-get install -y carla
+apt-cache search jack | grep -i "connection\|patch\|gui"
+sudo apt-get install -y aj-snapshot
+mkdir -p ~/.config/systemd/user/
+pip install JACK-client
+sudo apt-get install -y python3-jack-client
+sudo apt-get install -y python3-adafruit-blinka python3-adafruit-circuitpython-mcp3xxx
+python3 -m venv venv && source venv/bin/activate && pip install adafruit-blinka adafruit-circuitpython-mcp3xxx
+ps aux | grep pipewire
+ls -l /etc/pipewire/pipewire.conf.d/
+sudo mkdir -p /etc/pipewire/pipewire.conf.d/
+calfjackhost --client eq8 eq8 --no-gui
+which calfjackhost pipewire-jack pavucontrol
+pip list | grep -E "numpy|adafruit-circuitpython-mcp3xxx"
+cd /home/wave/W-AV && env/bin/python3 OscViz/direct_eq.py
+systemctl --user status pipewire pipewire-pulse | cat
+ls -l /etc/ld.so.conf.d/pipewire-jack.conf
+pgrep -l calfjackhost
+jack_lsp | cat
+cat /etc/pipewire/pipewire.conf | grep -A 10 'context.objects'
+systemctl --user restart pipewire pipewire-pulse
+apt list --installed | grep -E "pipewire|jack"
+killall -9 jackd calfjackhost; sleep 2
+pw-jack jack_lsp | cat
+mkdir -p ~/.config/pipewire/pipewire.conf.d/
+aplay -l | cat
+jackd -d alsa -d hw:0,0 -r 48000 -p 1024 &
+calfjackhost eq8:eq &
+calfjackhost eq8:eq &
+pw-jack calfjackhost eq8:eq &
+jackd -d alsa -d hw:2,0 -r 48000 -p 1024 &
+python3 OscViz/eq_control.py
+sudo apt-get install calf-plugins python3-mido
+python3 OscViz/eq_control.py
+python3 OscViz/eq_control.py
+calfjackhost --client eq8 eq8
+python3 OscViz/direct_eq.py
+sudo usermod -a -G audio wave && groups wave | cat
+cd /home/wave/W-AV && env/bin/python3 OscViz/direct_eq.py
+sleep 2 && pgrep -l calfjackhost
+/usr/bin/python3 /home/wave/.cursor-server/extensions/ms-python.python-2024.12.3-linux-arm64/python_files/printEnvVariablesToFile.py /home/wave/.cursor-server/extensions/ms-python.python-2024.12.3-linux-arm64/python_files/deactivate/bash/envVars.txt
+DISPLAY=:0 calfjackhost eq8:eq &
+/usr/bin/python3 /home/wave/.cursor-server/extensions/ms-python.python-2024.12.3-linux-arm64/python_files/printEnvVariablesToFile.py /home/wave/.cursor-server/extensions/ms-python.python-2024.12.3-linux-arm64/python_files/deactivate/bash/envVars.txt
+/usr/bin/python3 /home/wave/.cursor-server/extensions/ms-python.python-2024.12.3-linux-arm64/python_files/printEnvVariablesToFile.py /home/wave/.cursor-server/extensions/ms-python.python-2024.12.3-linux-arm64/python_files/deactivate/bash/envVars.txt
+sudo reboot now
+/usr/bin/python3 /home/wave/.cursor-server/extensions/ms-python.python-2024.12.3-linux-arm64/python_files/printEnvVariablesToFile.py /home/wave/.cursor-server/extensions/ms-python.python-2024.12.3-linux-arm64/python_files/deactivate/bash/envVars.txt
+dpkg -l | grep -E 'jack|pulse|pipewire' | cat
+sudo systemctl stop jack && sudo apt remove --purge jackd jackd2 qjackctl python3-jack-client && sudo apt autoremove
+rm -rf ~/.config/jack ~/.config/pipewire ~/.local/state/pipewire ~/.local/state/wireplumber 2>/dev/null; sudo rm -f /etc/pipewire/pipewire.conf.d/*custom* /etc/wireplumber/main.lua.d/*custom* 2>/dev/null
+sudo apt install --reinstall pipewire pipewire-pulse pipewire-bin libpipewire-0.3-0 libpipewire-0.3-modules wireplumber
+systemctl --user restart pipewire pipewire-pulse
+pactl list sinks short | cat
+sudo apt-get install pulseaudio-module-zeroconf avahi-daemon
+/usr/bin/python3 /home/wave/.cursor-server/extensions/ms-python.python-2024.12.3-linux-arm64/python_files/printEnvVariablesToFile.py /home/wave/.cursor-server/extensions/ms-python.python-2024.12.3-linux-arm64/python_files/deactivate/bash/envVars.txt
+sudo shutdown now

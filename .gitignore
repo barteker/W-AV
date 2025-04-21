@@ -1,5 +1,4 @@
 .env
-_defunct
 .credentials
 node_modules
 venv
