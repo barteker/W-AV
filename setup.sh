@@ -100,6 +100,21 @@ chmod +x minimal-x-session.sh
 echo "Creating necessary directories..."
 mkdir -p .credentials
 
+# Create template .env file if it doesn't exist
+echo "Setting up environment configuration..."
+if [ ! -f .env ]; then
+    cat > .env << EOL
+# Spotify API Credentials
+# Get these values from https://developer.spotify.com/dashboard
+SPOTIFY_CLIENT_ID=your_client_id_here
+SPOTIFY_CLIENT_SECRET=your_client_secret_here
+
+# Optional: Server Port (defaults to 8888 if not set)
+PORT=8888
+EOL
+    echo "Created template .env file. Please edit it with your Spotify API credentials."
+fi
+
 # Setup logging directories
 echo "Setting up logging..."
 sudo touch /var/log/w-av.log
