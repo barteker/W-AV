@@ -24,6 +24,7 @@ sudo apt-get install -y \
     python3-pyqt5 \
     python3-numpy \
     python3-scipy \
+    python3-pyqtgraph \
     libportaudio2 \
     portaudio19-dev \
     python3-pyaudio \
