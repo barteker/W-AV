@@ -37,7 +37,7 @@ INPUT_FREQS = [60, 150, 400, 1000, 2400, 6000, 15000]  # 7 Bands from sliders
 JDSP_FREQS = [25, 40, 63, 100, 160, 250, 400, 630, 1000, 1600, 2500, 4000, 6300, 10000, 16000]  # 15 Bands in JamesDSP
 
 # Configuration parameters
-UPDATE_INTERVAL = 0.2  # Reduce update frequency to 5Hz (was 0.05 = 20Hz)
+UPDATE_INTERVAL = 0.3  # Reduce update frequency to 5Hz (was 0.05 = 20Hz)
 HISTORY_SIZE = 10      # Increase history size for better smoothing (was 5)
 CHANGE_THRESHOLD = 1.0 # Increase threshold to reduce updates (was 0.5dB)
 UPDATE_BATCH_TIME = 1.0 # Only update JamesDSP at most once per second
