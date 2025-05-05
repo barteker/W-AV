@@ -29,6 +29,11 @@ for i in {1..15}; do
     sleep 1
 done
 
+# # Start EQ Audio Routing to DAC
+# cd /home/wave/W-AV/OscViz
+# python3 browser_eq_route.py >/dev/null 2>&1 &
+# sleep 3
+
 # Start Chromium in kiosk mode with HTTP
 chromium-browser --kiosk \
                 --window-position=0,0 \
@@ -42,9 +47,17 @@ if ! ps -p $BROWSER_PID > /dev/null; then
 fi
 
 # Start volume control
+# Start JamesDSP
+cd
+./JDSP4Linux/build/src/jamesdsp >/dev/null 2>&1 &
+
+# Return to main directory and start audio control scripts
 cd /home/wave/W-AV
-env/bin/python3 OscViz/VolumeControl.py >/dev/null 2>&1 &
-PYTHONPATH=/usr/lib/python3/dist-packages python3 OscViz/oscVizQt5.py >/dev/null 2>&1 &
+./env/bin/python3 OscViz/VolumeControl.py >/dev/null 2>&1 &
+
+# Start EQ control scripts
+./env/bin/python3 OscViz/jdsp_eq_control.py >/dev/null 2>&1 &
+PYTHONPATH=/usr/lib/python3/dist-packages ./env/bin/python3 OscViz/oscVizQt5.py >/dev/null 2>&1 &
 
 # Keep the X session running
 wait
